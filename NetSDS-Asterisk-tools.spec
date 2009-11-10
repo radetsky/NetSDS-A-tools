@@ -24,10 +24,13 @@ Some useful tools:
 %build
 %install
 mkdir -p %buildroot/usr/share/doc/%origname
+install -m755 callback.sh %buildroot/usr/share/doc/%origname
+install -m755 voicefiles.rotate.sh %buildroot/usr/share/doc/%origname
+
 
 %files
 %doc /usr/share/doc/%origname/callback.sh
-%doc /usr/share/doc/%origname/voicefile.rotate.sh 
+%doc /usr/share/doc/%origname/voicefiles.rotate.sh 
 
 %changelog
 * Tue Nov 10 2009 Alex Radetsky <rad@rad.kiev.ua> 0.1-alt1
