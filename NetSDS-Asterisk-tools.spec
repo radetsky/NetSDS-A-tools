@@ -13,10 +13,13 @@ Packager: Alex Radetsky <rad@rad.kiev.ua>
 
 Source: %origname-%version.tar.gz
 
+Requires: perl-Data-UUID 
+
 %description
 Some useful tools: 
 - callback
-- voicefile rotate 
+- voicefile rotate
+- uuid (agi)
 
 %prep
 %setup -n %origname-%version
@@ -26,15 +29,19 @@ Some useful tools:
 mkdir -p %buildroot/usr/share/doc/%origname
 install -m755 callback.sh %buildroot/usr/share/doc/%origname
 install -m755 voicefiles.rotate.sh %buildroot/usr/share/doc/%origname
+install -m755 uuid.pl %buildroot/usr/share/doc/%origname
 
 
 %files
 %doc /usr/share/doc/%origname/callback.sh
 %doc /usr/share/doc/%origname/voicefiles.rotate.sh 
+%doc /usr/share/doc/%origname/uuid.pl 
 
 %changelog
 * Tue Nov 10 2009 Alex Radetsky <rad@rad.kiev.ua> 0.1-alt1
 - create package.
+- added uuid.pl (simple AGI script) 
+
 
 
 
