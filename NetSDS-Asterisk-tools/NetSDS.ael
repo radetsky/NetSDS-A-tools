@@ -1,0 +1,19 @@
+// Replace current CallerID(num) by CallerID(name) when length(callerid(num)) <= 4) 
+// It means that CallerID(num) contains wrong information
+
+macro replace_callerid_num_by_name() {
+    CALLERIDNUM=${CALLERID(num)};
+    if (${LEN(${CALLERIDNUM})} <= 4) {
+        Set(CALLERID(all)="${CALLERID(name)}");
+    };
+};
+
+macro set_callerid_to_nine() { 
+	  CALLERIDNUM=${CALLERID(num)}; 
+    if (${LEN(${CALLERIDNUM})} > 9) { 
+        PREFIXLEN   = ${LEN(${CALLERIDNUM})} - 9;
+        CALLERIDNUM = ${CALLERIDNUM:${PREFIXLEN}:9};
+        Set(CALLERID(all)="${CALLERIDNUM}"; 
+    };
+};
+
