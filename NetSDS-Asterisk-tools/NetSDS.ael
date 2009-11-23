@@ -13,7 +13,7 @@ macro set_callerid_to_nine() {
     if (${LEN(${CALLERIDNUM})} > 9) { 
         PREFIXLEN   = ${LEN(${CALLERIDNUM})} - 9;
         CALLERIDNUM = ${CALLERIDNUM:${PREFIXLEN}:9};
-        Set(CALLERID(all)="${CALLERIDNUM}"; 
+        Set(CALLERID(all)="${CALLERIDNUM}"); 
     };
 };
 
