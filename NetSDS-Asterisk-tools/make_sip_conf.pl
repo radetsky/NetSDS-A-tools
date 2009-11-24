@@ -28,7 +28,6 @@ my $debug                = 0;
 my $account_number_begin = 200;                           # Default values
 my $account_number_end   = 500;
 my $type                 = 'friend';
-my $username             = undef;                         # Default: set username same as $account_num
 my $secret               = 'random';
 my $context              = 'LocalOffice';
 my $host                 = 'dynamic';
@@ -47,12 +46,47 @@ my $allow                = 'g729,ulaw,alaw';
 
 GetOpts();
 
+for ( my $account_number = $account_number_begin ; $account_number <= $account_number_end ; $account_number = $account_number + 1 ) {
+	printf("[%s]\ntype=%s\nsecret=%s\ncontext=%s\nhost=%s\ndeny=%s\npermit=%s\ninsecure=%s\nqualify=%s\ncanreinvite=%s\ndisallow=%s\n%s\n\n", 
+		$account_number, 
+		$type,
+		make_password(),
+		$context,
+		$host,
+		$deny,
+		$permit,
+		$insecure,
+		$qualify,
+		$canreinvite,
+		$disallow,
+		allow_codecs_strings($allow) ); 
+
+}
+
+
+sub make_password { 
+	my $password = `/usr/bin/pwgen 8 1`;
+	chomp($password); 
+	return $password; 
+} 
+
+
+sub allow_codecs_strings { 
+	my $allowstr = shift; 
+	my (@a) = split(/,/,$allowstr); 
+	my $result = undef;
+	foreach my $i (@a) { 
+		$result = $result . "allow=$i\n"; 
+	} 
+	return $result; 
+}
+
 #############
 # GetOpts
 #############
 sub GetOpts {
 
-	Getopt::Mixed::init("debug help begin=i end=i type=s username=s secret=s context=s host=s deny=s permit=s insecure=s qualify=s canreinvite=s disallow=s allow=s");
+	Getopt::Mixed::init("debug help begin=i end=i type=s secret=s context=s host=s deny=s permit=s insecure=s qualify=s canreinvite=s disallow=s allow=s");
 	while ( my ( $option, $value, $pretty ) = nextOption() ) {
 		if ( $option eq 'debug' ) {
 			$debug++;
@@ -64,8 +98,6 @@ sub GetOpts {
 			$account_number_end = $value;
 		} elsif ( $option eq 'type' ) {
 			$type = $value;
-		} elsif ( $option eq 'username' ) {
-			$username = $value;
 		} elsif ( $option eq 'secret' ) {
 			$secret = $value;
 		} elsif ( $option eq 'context' ) {
@@ -100,7 +132,6 @@ sub Usage {
 	--begin = number that begins your accounts e.g. 200
 	--end   = number that finish your accounts e.g. 299 
 	--type  = type of SIP peer : friend or peer 
-	--username = \'same\' or nothing 
 	--secret =   \'random\' or nothing 
 	--context =  outbound context to the users that generates this script 
 	--host = dynamic or FQDN 
