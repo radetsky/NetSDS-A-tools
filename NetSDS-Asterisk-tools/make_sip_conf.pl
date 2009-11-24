@@ -38,6 +38,8 @@ my $qualify              = 'yes';
 my $canreinvite          = 'no';
 my $disallow             = 'all';
 my $allow                = 'g729,ulaw,alaw';
+my $call_limit           = 6;
+my $nat                  = 'yes';
 
 ############
 # Main ()
@@ -47,8 +49,9 @@ my $allow                = 'g729,ulaw,alaw';
 GetOpts();
 
 for ( my $account_number = $account_number_begin ; $account_number <= $account_number_end ; $account_number = $account_number + 1 ) {
-	printf("[%s]\ntype=%s\nsecret=%s\ncontext=%s\nhost=%s\ndeny=%s\npermit=%s\ninsecure=%s\nqualify=%s\ncanreinvite=%s\ndisallow=%s\n%s\n\n", 
-		$account_number, 
+	printf(
+		"[%s]\ntype=%s\nsecret=%s\ncontext=%s\nhost=%s\ndeny=%s\npermit=%s\ninsecure=%s\nqualify=%s\nnat=%s\ncall-limit=%s\ncanreinvite=%s\ndisallow=%s\n%s\n\n",
+		$account_number,
 		$type,
 		make_password(),
 		$context,
@@ -57,28 +60,29 @@ for ( my $account_number = $account_number_begin ; $account_number <= $account_n
 		$permit,
 		$insecure,
 		$qualify,
+		$nat,
+		$call_limit,
 		$canreinvite,
 		$disallow,
-		allow_codecs_strings($allow) ); 
+		allow_codecs_strings($allow)
+	);
 
+} ## end for ( my $account_number...
+
+sub make_password {
+	my $password = `/usr/bin/pwgen 8 1`;
+	chomp($password);
+	return $password;
 }
 
-
-sub make_password { 
-	my $password = `/usr/bin/pwgen 8 1`;
-	chomp($password); 
-	return $password; 
-} 
-
-
-sub allow_codecs_strings { 
-	my $allowstr = shift; 
-	my (@a) = split(/,/,$allowstr); 
+sub allow_codecs_strings {
+	my $allowstr = shift;
+	my (@a) = split( /,/, $allowstr );
 	my $result = undef;
-	foreach my $i (@a) { 
-		$result = $result . "allow=$i\n"; 
-	} 
-	return $result; 
+	foreach my $i (@a) {
+		$result = $result . "allow=$i\n";
+	}
+	return $result;
 }
 
 #############
@@ -86,7 +90,7 @@ sub allow_codecs_strings {
 #############
 sub GetOpts {
 
-	Getopt::Mixed::init("debug help begin=i end=i type=s secret=s context=s host=s deny=s permit=s insecure=s qualify=s canreinvite=s disallow=s allow=s");
+	Getopt::Mixed::init("debug help begin=i end=i type=s secret=s context=s host=s deny=s permit=s insecure=s qualify=s nat=s call-limit=i canreinvite=s disallow=s allow=s");
 	while ( my ( $option, $value, $pretty ) = nextOption() ) {
 		if ( $option eq 'debug' ) {
 			$debug++;
@@ -118,6 +122,10 @@ sub GetOpts {
 			$disallow = $value;
 		} elsif ( $option eq 'allow' ) {
 			$allow = $value;
+		} elsif ( $option eq 'nat' ) {
+			$nat = $value;
+		} elsif ( $option eq 'call-limit' ) {
+			$call_limit = $value;
 		}
 	} ## end while ( my ( $option, $value...
 	Getopt::Mixed::cleanup();
@@ -139,6 +147,8 @@ sub Usage {
 	--permit = defaut value 192.168.0.0/255.255.255.0 
 	--insecure = default value \'no\' may be \'invite,port\' 
 	--qualify = default yes, may be no 
+	--nat = yes/no 
+	--call-limit = 1..6
 	--canreinvite 
 	--disallow=all
 	--allow=g729,ulaw,alaw \n\n"

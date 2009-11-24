@@ -13,7 +13,7 @@ Packager: Alex Radetsky <rad@rad.kiev.ua>
 
 Source: %origname-%version.tar.gz
 
-Requires: perl-Data-UUID pwgen  
+Requires: perl-Data-UUID pwgen perl-Getopt-Mixed  
 
 %description
 Some useful tools: 

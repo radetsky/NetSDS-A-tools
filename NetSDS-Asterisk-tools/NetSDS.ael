@@ -17,3 +17,84 @@ macro set_callerid_to_nine() {
     };
 };
 
+macro enter_queue (queuename) {
+		Answer();
+		Wait(0.5);
+		CHANTYPE=${CHANNEL(channeltype)};
+    if ("${CHANTYPE}" = "SIP") {
+			AddQueueMember(${queuename});
+    	switch(${AQMSTATUS}) {
+        case ADDED:
+            Playback (agent-loginok);
+            AGENTIP=${SIPPEER(${CALLERID(num)})};
+            Set(DB(${CALLERID(num)}/ip)=${AGENTIP});
+            break;
+        case MEMBERALREADY:
+            Playback (agent-alreadyon);
+            AGENTIP=${SIPPEER(${CALLERID(num)})};
+            Set(DB(${CALLERID(num)}/ip)=${AGENTIP});
+            break;
+        case NOSUCHQUEUE:
+            Playback (agent-incorrect);
+            break;
+        default:
+            break;
+    	}
+		}
+   	Hangup(17);
+}; 
+
+macro exit_queue (queuename) { 
+	Answer(); 
+  Wait(0.5); 
+  CHANTYPE=${CHANNEL(channeltype)};
+  if ("${CHANTYPE}" = "SIP") {
+		RemoveQueueMember(${queuename});
+          switch(${RQMSTATUS}) {
+           case REMOVED:
+               Playback (agent-loggedoff);
+               DBDel(${CALLERID(num)}/ip);
+               break;
+           case NOTINQUEUE:
+               Playback (agent-loggedoff);
+               break;
+           case NOSUCHQUEUE:
+               Playback (agent-incorrect);
+               break;
+           default:
+           break;
+    };
+  }; 
+  Hangup(17); 
+}; 
+
+//********************************************************************
+//* Make outgoing calls
+//********************************************************************
+macro out-call(CallerID,Exten,Interface) {
+    AGI(agi://perlapps:20201/uuid);
+    NoOp(UUID=${UUID});
+    Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
+    Set(TIMEOUT(absolute)=3600);
+    Set(CHANNEL(language)=ru);
+    Set(CDR(userfield)="OUTGOING,${UUID}");
+    Set(CALLERID(num)=${CallerID});
+    MixMonitor(${MONITOR_FILENAME}.wav);
+    Dial(${Interface}/${Exten},120,rtT);
+};
+
+//*********************
+//* Make local calls 
+//********************* 
+macro local-call(Exten,Interface) {
+    AGI(agi://perlapps:20201/uuid);
+    NoOp(UUID=${UUID});
+    Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
+    Set(TIMEOUT(absolute)=3600);
+    Set(CHANNEL(language)=ru);
+    Set(CDR(userfield)="LOCAL,${UUID}");
+    MixMonitor(${MONITOR_FILENAME}.wav);
+    Dial(${Interface}/${Exten},120,rtT);
+};
+
+
