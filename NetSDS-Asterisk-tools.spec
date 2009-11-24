@@ -33,7 +33,7 @@ mkdir -p %buildroot/etc/cron.daily
 install -m755 callback.sh %buildroot/usr/bin/
 install -m755 voicefiles.rotate.sh %buildroot/etc/cron.daily/
 install -m755 uuid.pl %buildroot/usr/lib/asterisk/agi-bin/
-install -m755 make_sip_conf.pl %buildroot /usr/bin/
+install -m755 make_sip_conf.pl %buildroot/usr/bin/
 
 
 %files
