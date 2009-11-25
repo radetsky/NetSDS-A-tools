@@ -36,6 +36,7 @@ install -m755 voicefiles.rotate.sh %buildroot/etc/cron.daily/
 install -m755 uuid.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 make_sip_conf.pl %buildroot/usr/bin/
 install -m644 NetSDS.ael %buildroot/etc/asterisk
+install -m644 dialout_examples.ael %buildroot/etc/asterisk
 
 
 %files
@@ -44,12 +45,13 @@ install -m644 NetSDS.ael %buildroot/etc/asterisk
 /usr/lib/asterisk/agi-bin/uuid.pl 
 /usr/bin/make_sip_conf.pl 
 /etc/asterisk/NetSDS.ael 
+/etc/asterisk/dialout_examples.ael
 
 %changelog
 * Tue Nov 24 2009 Alex Radetsky <rad@rad.kiev.ua> 0.2-alt1
 - added make_sip_conf.pl 
 - added NetSDS.ael 
-
+- added dialout_examples.ael 
 
 * Tue Nov 10 2009 Alex Radetsky <rad@rad.kiev.ua> 0.1-alt1
 - create package.

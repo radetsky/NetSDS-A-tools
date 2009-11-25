@@ -1,0 +1,113 @@
+// Пользователям из группы А и всех остальных, только по другим правилам, разрешены:
+// а) Локальные звонки другим пользователям системы
+// б) звонки на вход/выход из своей очереди
+// в) звонки в город, в том числе и на 1ХХ
+// г) звонки на мобильные/междугородные направления
+// МЕЖДУНАРОДКА ЗАКРЫТА
+
+// Requires NetSDS.ael 
+
+context Out_Group_A {
+  // Queue operations 
+  1091 => { 
+    &enter_group(group_a); 
+  }; 
+  1092 => { 
+    &exit_group(group_a); 
+  }; 
+
+  // International call is closed ! 
+  _00XXX. => {
+    Hangup(17);
+  };
+ 
+  // Emergency calls 
+  _1XX => { 
+    &out-call(445020202,${EXTEN},Zap/r0); // Vega PRI 5020202 
+  }; 
+
+  // Local PBX calls 
+  _[2-9]XX => {
+	  &local-call(${EXTEN},SIP);
+  }; 
+
+  // City calls 
+  _[2-5]XXXXXX => { 
+    &out-call(445020202,${EXTEN},Zap/r0);     // Vega PRI 5020202
+    &out-call(505020202,${EXTEN},${SIPGSM1}); // GSM 1
+		&out-call(444590202,${EXTEN},Zap/r1);     // Golden Telecom PRI 4590000 
+	}; 
+  
+	// ****************************************************
+  // Life:) 
+	// ****************************************************
+  _063XXXXXXX => { 
+	 	&out-call(931790202,${EXTEN},${SIPLIFE});  // Life VoIP 
+   	&out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+	 	&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+  };
+  _093XXXXXXX => { 
+	 	&out-call(931790202,${EXTEN},${SIPLIFE});  // Life VoIP 
+   	&out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+	 	&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+  };
+  
+  // ****************************************************
+	// KyivStar 
+	// ****************************************************
+  _067XXXXXXX => { 
+	  &out-call(443230202,${EXTEN},${SIPKS});    // KievStar VoIP 
+    &out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+	}; 
+  _096XXXXXXX => { 
+	  &out-call(443230202,${EXTEN},${SIPKS});    // KievStar VoIP 
+    &out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+	}; 
+  _097XXXXXXX => { 
+	  &out-call(443230202,${EXTEN},${SIPKS});    // KievStar VoIP 
+    &out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+	}; 
+  _098XXXXXXX => { 
+	  &out-call(443230202,${EXTEN},${SIPKS});    // KievStar VoIP 
+    &out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+	}; 
+
+	// ****************************************************
+	// Beeline 
+  // ****************************************************
+  _068XXXXXXX => { 
+    &out-call(685020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+	}; 
+
+
+	// ****************************************************
+	// 92 ??
+	// ****************************************************
+  _092XXXXXXX => { 
+    &out-call(925020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+	}; 
+
+  // ****************************************************
+	// MTS / UMC 
+	// ****************************************************
+
+       
+  // ****************************************************
+	// Default calls 
+	// ****************************************************
+  _X. => {
+		&out-call(505020202,${EXTEN},${SIPGSM1});  // GSM 1
+		&out-call(444590202,${EXTEN},Zap/r1);      // Golden Telecom PRI 4590000
+		Hangup(17); 
+	}
+
+}
+

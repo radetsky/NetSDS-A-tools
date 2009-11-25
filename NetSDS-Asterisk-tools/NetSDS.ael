@@ -81,6 +81,9 @@ macro out-call(CallerID,Exten,Interface) {
     Set(CALLERID(num)=${CallerID});
     MixMonitor(${MONITOR_FILENAME}.wav);
     Dial(${Interface}/${Exten},120,rtT);
+		if ("${DIALSTATUS}" == "ANSWER") { 
+			Hangup(17); 
+		};
 };
 
 //*********************
@@ -95,6 +98,9 @@ macro local-call(Exten,Interface) {
     Set(CDR(userfield)="LOCAL,${UUID}");
     MixMonitor(${MONITOR_FILENAME}.wav);
     Dial(${Interface}/${Exten},120,rtT);
+		if ("${DIALSTATUS}" == "ANSWER") { 
+			Hangup(17); 
+		};
 };
 
 
