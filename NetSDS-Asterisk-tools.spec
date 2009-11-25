@@ -34,6 +34,8 @@ mkdir -p %buildroot/etc/asterisk
 install -m755 callback.sh %buildroot/usr/bin/
 install -m755 voicefiles.rotate.sh %buildroot/etc/cron.daily/
 install -m755 uuid.pl %buildroot/usr/lib/asterisk/agi-bin/
+install -m755 navconnect.sh %buildroot/usr/lib/asterisk/agi-bin/
+install -m755 confirm_call.sh %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 make_sip_conf.pl %buildroot/usr/bin/
 install -m644 NetSDS.ael %buildroot/etc/asterisk
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
@@ -43,6 +45,8 @@ install -m644 dialout_examples.ael %buildroot/etc/asterisk
 /usr/bin/callback.sh
 /etc/cron.daily/voicefiles.rotate.sh 
 /usr/lib/asterisk/agi-bin/uuid.pl 
+/usr/lib/asterisk/agi-bin/navconnect.sh
+/usr/lib/asterisk/agi-bin/confirm_call.sh 
 /usr/bin/make_sip_conf.pl 
 /etc/asterisk/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
@@ -52,6 +56,8 @@ install -m644 dialout_examples.ael %buildroot/etc/asterisk
 - added make_sip_conf.pl 
 - added NetSDS.ael 
 - added dialout_examples.ael 
+- added navconnect.sh 
+- added confirm_call.sh 
 
 * Tue Nov 10 2009 Alex Radetsky <rad@rad.kiev.ua> 0.1-alt1
 - create package.
