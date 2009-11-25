@@ -17,6 +17,25 @@ macro set_callerid_to_nine() {
     };
 };
 
+macro check_blacklist() { 
+				//*******************************************************************
+				// Blacklist entry ? Yes:No
+				//*******************************************************************
+        listed=0;
+        AGI(agi://perlapps:20201/blacklist?calleridnum=${CALLERIDNUM});
+        if (${listed}>0) {
+             Hangup(17);
+        }
+
+};
+macro check_whitelist() { 
+				WHITELISTED=0;
+        AGI(agi://perlapps:20201/whitelist?calleridnum=${CALLERIDNUM});
+        if (${listed}>0) {
+             Set(WHITELISTED=1);
+        };
+};
+
 macro enter_queue (queuename) {
 		Answer();
 		Wait(0.5);
@@ -103,4 +122,20 @@ macro local-call(Exten,Interface) {
 		};
 };
 
+//*********************
+//* Make incoming call 
+//*********************
+
+macro init-call () { 
+		&replace_callerid_num_by_name();
+		&set_callerid_to_nine(); 
+    AGI(agi://perlapps:20201/uuid);
+    NoOp(UUID=${UUID});
+    Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
+    Set(TIMEOUT(absolute)=3600);
+    Set(CHANNEL(language)=ru);
+    Set(CDR(userfield)="INCOMING-CANCEL,${UUID}");
+    MixMonitor(${MONITOR_FILENAME}.wav); 
+
+} 
 
