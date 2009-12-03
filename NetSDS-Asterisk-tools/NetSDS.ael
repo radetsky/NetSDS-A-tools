@@ -1,6 +1,9 @@
 // Replace current CallerID(num) by CallerID(name) when length(callerid(num)) <= 4) 
 // It means that CallerID(num) contains wrong information
 
+
+
+
 macro replace_callerid_num_by_name() {
     CALLERIDNUM=${CALLERID(num)};
     if (${LEN(${CALLERIDNUM})} <= 4) {
@@ -138,4 +141,67 @@ macro init-call () {
     MixMonitor(${MONITOR_FILENAME}.wav); 
 
 } 
+
+//// *********************** Enterprise Contexts and Macros *************************
+
+context EnterprisePBXFunctions {
+        includes {
+                parkedcalls;
+        };
+// Park call
+        _7[0-9]X => {
+                PARKINGEXTEN=${EXTEN};
+                ParkAndAnnounce(PARKED,6000,Console/dsp);
+        };
+// Unpark call
+        _8[0-9]X => {
+                Answer();
+                UNPARK=${EXTEN} - 100;
+                goto parkedcalls|${UNPARK}|1;
+        };
+// Sets unconditional call forward
+        *72 => {
+                Answer();
+                Read(DEST,dial,11,i,,60);
+                NoOp(---===[[[ ${CALLERID(num)} set UNCONDITIONAL Call forward to  ' ${DEST} ' ]]]===---);
+                Set(DB(UnconditionalCallForward/${CALLERID(num)})=${DEST});
+                &PlayOK();
+                Hangup();
+        };
+// Delete unconditional call forward
+        *73 => {
+                Answer();
+                DOES_EXIST=${DB_EXISTS(UnconditionalCallForward/${CALLERID(num)})};
+                if (${DOES_EXIST}=1) {
+                        UN=${DB_DELETE(UnconditionalCallForward/${CALLERID(num)})};
+                };
+                NoOp(---===[[[ ${CALLERID(num)} unsets UNCONDITIONAL Call forward ]]]===---);
+                &PlayOK();
+                Hangup();
+        };
+
+// Dial my voicemail
+        *97 => {
+                Set(CHANNEL(language)=ru);
+                VoiceMailMain(${CALLERID(num)}@default);
+                HangUp(17);
+        };
+// Dial voicemail
+        *98 => {
+                Set(CHANNEL(language)=ru);
+                VoiceMailMain();
+                HangUp(17);
+        };
+// Spy on channel
+        _555#XXXX => {
+                SPY_EXTEN=${EXTEN:4:4};
+                ChanSpy(SIP/${SPY_EXTEN});
+        };
+};
+macro PlayOK() {
+        Playback(beep);
+        Wait(0.5);
+        Playback(beep);
+        return;
+};
 

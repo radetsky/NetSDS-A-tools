@@ -1,5 +1,5 @@
 %define origname NetSDS-Asterisk-tools
-%define version 0.2
+%define version 0.7
 
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
@@ -36,6 +36,7 @@ install -m755 voicefiles.rotate.sh %buildroot/etc/cron.daily/
 install -m755 uuid.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 navconnect.sh %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 confirm_call.sh %buildroot/usr/lib/asterisk/agi-bin/
+install -m755 officepark.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 make_sip_conf.pl %buildroot/usr/bin/
 install -m644 NetSDS.ael %buildroot/etc/asterisk
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
@@ -46,12 +47,19 @@ install -m644 dialout_examples.ael %buildroot/etc/asterisk
 /etc/cron.daily/voicefiles.rotate.sh 
 /usr/lib/asterisk/agi-bin/uuid.pl 
 /usr/lib/asterisk/agi-bin/navconnect.sh
-/usr/lib/asterisk/agi-bin/confirm_call.sh 
+/usr/lib/asterisk/agi-bin/confirm_call.sh
+/usr/lib/asterisk/agi-bin/officepark.pl
 /usr/bin/make_sip_conf.pl 
 /etc/asterisk/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
 
 %changelog
+* Thu Dec 03 2009 Alex Radetsky <rad@rad.kiev.ua> 0.7-alt1
+- Jump to same version with other tools 
+- added officepark.pl that uses perlapps/fcgi to find and park the call 
+- added new functionality to NetSDS.ael 
+
+
 * Tue Nov 24 2009 Alex Radetsky <rad@rad.kiev.ua> 0.2-alt1
 - added make_sip_conf.pl 
 - added NetSDS.ael 
