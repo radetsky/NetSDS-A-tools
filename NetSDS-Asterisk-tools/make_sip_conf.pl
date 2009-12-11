@@ -26,10 +26,10 @@ use Getopt::Mixed "nextOption";
 
 my $debug                = 0;
 my $account_number_begin = 200;                           # Default values
-my $account_number_end   = 500;
+my $account_number_end   = 299;
 my $type                 = 'friend';
 my $secret               = 'random';
-my $context              = 'LocalOffice';
+my $context              = 'office';
 my $host                 = 'dynamic';
 my $deny                 = '0.0.0.0/0.0.0.0';
 my $permit               = '192.168.0.0/255.255.255.0';
@@ -39,7 +39,8 @@ my $canreinvite          = 'no';
 my $disallow             = 'all';
 my $allow                = 'g729,ulaw,alaw';
 my $call_limit           = 6;
-my $nat                  = 'yes';
+my $nat                  = 'no';
+my $storage              = 'sip.conf';                    # or 'sql'
 
 ############
 # Main ()
@@ -49,23 +50,39 @@ my $nat                  = 'yes';
 GetOpts();
 
 for ( my $account_number = $account_number_begin ; $account_number <= $account_number_end ; $account_number = $account_number + 1 ) {
-	printf(
-		"[%s]\ntype=%s\nsecret=%s\ncontext=%s\nhost=%s\ndeny=%s\npermit=%s\ninsecure=%s\nqualify=%s\nnat=%s\ncall-limit=%s\ncanreinvite=%s\ndisallow=%s\n%s\n\n",
-		$account_number,
-		$type,
-		make_password(),
-		$context,
-		$host,
-		$deny,
-		$permit,
-		$insecure,
-		$qualify,
-		$nat,
-		$call_limit,
-		$canreinvite,
-		$disallow,
-		allow_codecs_strings($allow)
-	);
+
+	if ( $storage eq 'sip.conf' ) {
+
+		printf(
+			"[%s]\ntype=%s\nsecret=%s\ncontext=%s\nhost=%s\ndeny=%s\npermit=%s\ninsecure=%s\nqualify=%s\nnat=%s\ncall-limit=%s\ncanreinvite=%s\ndisallow=%s\n%s\n\n",
+			$account_number,
+			$type,
+			make_password(),
+			$context,
+			$host,
+			$deny,
+			$permit,
+			$insecure,
+			$qualify,
+			$nat,
+			$call_limit,
+			$canreinvite,
+			$disallow,
+			allow_codecs_strings($allow)
+		);
+	} ## end if ( $storage eq 'sip.conf')
+
+	if ( $storage eq 'sql' ) {
+
+		printf(
+			'insert into sip_conf (name,callgroup,context,host,nat,deny,permit,pickupgroup,qualify,type,username,disalllow,allow ) values ("%s",%d,"%s","%s","%s","%s","%s",%d,"%s","%s","%s","%s","%s","%s" );',
+			$account_number,1, 
+			$context, $host,           $nat,      $deny, $permit, 1,
+			$qualify, $type, $account_number, $disallow, $allow, make_password()
+		);
+		printf("\n"); 
+
+	}
 
 } ## end for ( my $account_number...
 
@@ -90,7 +107,7 @@ sub allow_codecs_strings {
 #############
 sub GetOpts {
 
-	Getopt::Mixed::init("debug help begin=i end=i type=s secret=s context=s host=s deny=s permit=s insecure=s qualify=s nat=s call-limit=i canreinvite=s disallow=s allow=s");
+	Getopt::Mixed::init("debug help begin=i end=i type=s secret=s context=s host=s deny=s permit=s insecure=s qualify=s nat=s call-limit=i canreinvite=s disallow=s allow=s storage=s");
 	while ( my ( $option, $value, $pretty ) = nextOption() ) {
 		if ( $option eq 'debug' ) {
 			$debug++;
@@ -126,6 +143,8 @@ sub GetOpts {
 			$nat = $value;
 		} elsif ( $option eq 'call-limit' ) {
 			$call_limit = $value;
+		} elsif ( $option eq 'storage' ) {
+			$storage = $value;
 		}
 	} ## end while ( my ( $option, $value...
 	Getopt::Mixed::cleanup();
@@ -151,7 +170,9 @@ sub Usage {
 	--call-limit = 1..6
 	--canreinvite 
 	--disallow=all
-	--allow=g729,ulaw,alaw \n\n"
+	--allow=g729,ulaw,alaw
+	--storage=sql ( default sip.conf ) 
+	\n\n"
 	);
 
 	exit(0);
