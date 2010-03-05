@@ -76,7 +76,7 @@ for ( my $account_number = $account_number_begin ; $account_number <= $account_n
 	if ( $storage eq 'sql' ) {
 
 		printf(
-			'insert into sip_conf (name,callgroup,callerid,context,host,nat,deny,permit,pickupgroup,qualify,type,username,disalllow,allow ) values ("%s",%d,\'%s\',"%s","%s","%s","%s","%s",%d,"%s","%s","%s","%s","%s","%s" );',
+			'insert into sip_conf (name,callgroup,callerid,context,host,nat,deny,permit,pickupgroup,qualify,type,username,disallow,allow,secret ) values (\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',%d,\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\' );',
 			$account_number,1, sprintf("\"%s\"<%s>",$account_number,$account_number),
 			$context, $host,           $nat,      $deny, $permit, 1,
 			$qualify, $type, $account_number, $disallow, $allow, make_password()

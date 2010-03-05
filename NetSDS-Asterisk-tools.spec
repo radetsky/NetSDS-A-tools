@@ -38,7 +38,7 @@ install -m755 navconnect.sh %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 confirm_call.sh %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 officepark.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 make_sip_conf.pl %buildroot/usr/bin/
-install -m644 NetSDS.ael %buildroot/etc/asterisk
+install -m644 NetSDS.ael %buildroot/usr/share/doc/%origname
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
 
 
