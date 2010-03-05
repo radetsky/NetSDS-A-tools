@@ -37,8 +37,8 @@ my $insecure             = 'no';
 my $qualify              = 'yes';
 my $canreinvite          = 'no';
 my $disallow             = 'all';
-my $allow                = 'g729,ulaw,alaw';
-my $call_limit           = 6;
+my $allow                = 'ulaw,alaw';
+my $call_limit           = 1;
 my $nat                  = 'no';
 my $storage              = 'sip.conf';                    # or 'sql'
 
@@ -54,10 +54,11 @@ for ( my $account_number = $account_number_begin ; $account_number <= $account_n
 	if ( $storage eq 'sip.conf' ) {
 
 		printf(
-			"[%s]\ntype=%s\nsecret=%s\ncontext=%s\nhost=%s\ndeny=%s\npermit=%s\ninsecure=%s\nqualify=%s\nnat=%s\ncall-limit=%s\ncanreinvite=%s\ndisallow=%s\n%s\n\n",
+			"[%s]\ntype=%s\nsecret=%s\ncallerid=%s\ncontext=%s\nhost=%s\ndeny=%s\npermit=%s\ninsecure=%s\nqualify=%s\nnat=%s\ncall-limit=%s\ncanreinvite=%s\ndisallow=%s\n%s\n\n",
 			$account_number,
 			$type,
 			make_password(),
+			sprintf("\"%s\"<%s>",$account_number,$account_number),
 			$context,
 			$host,
 			$deny,
@@ -75,8 +76,8 @@ for ( my $account_number = $account_number_begin ; $account_number <= $account_n
 	if ( $storage eq 'sql' ) {
 
 		printf(
-			'insert into sip_conf (name,callgroup,context,host,nat,deny,permit,pickupgroup,qualify,type,username,disalllow,allow ) values ("%s",%d,"%s","%s","%s","%s","%s",%d,"%s","%s","%s","%s","%s","%s" );',
-			$account_number,1, 
+			'insert into sip_conf (name,callgroup,callerid,context,host,nat,deny,permit,pickupgroup,qualify,type,username,disalllow,allow ) values ("%s",%d,\'%s\',"%s","%s","%s","%s","%s",%d,"%s","%s","%s","%s","%s","%s" );',
+			$account_number,1, sprintf("\"%s\"<%s>",$account_number,$account_number),
 			$context, $host,           $nat,      $deny, $permit, 1,
 			$qualify, $type, $account_number, $disallow, $allow, make_password()
 		);
