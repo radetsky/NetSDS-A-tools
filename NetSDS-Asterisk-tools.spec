@@ -50,7 +50,7 @@ install -m644 dialout_examples.ael %buildroot/etc/asterisk
 /usr/lib/asterisk/agi-bin/confirm_call.sh
 /usr/lib/asterisk/agi-bin/officepark.pl
 /usr/bin/make_sip_conf.pl 
-/etc/asterisk/NetSDS.ael 
+/usr/share/doc/NetSDS-Asterisk-tools/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
 
 %changelog
