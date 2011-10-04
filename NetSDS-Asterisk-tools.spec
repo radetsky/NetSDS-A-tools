@@ -1,5 +1,5 @@
 %define origname NetSDS-Asterisk-tools
-%define version 0.7
+%define version 1.0
 
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
@@ -9,11 +9,13 @@ License: GPL
 Group: Development/Perl
 BuildArch: noarch
 
-Packager: Alex Radetsky <rad@rad.kiev.ua>
+Packager: Dmitriy Kruglikov <dkr@altlinux.ru>
 
 Source: %origname-%version.tar.gz
 
-Requires: perl-Data-UUID pwgen perl-Getopt-Mixed  
+Requires: perl-Data-UUID
+Requires: pwgen
+Requires: perl-Getopt-Mixed
 
 %description
 Some useful tools: 
@@ -54,6 +56,9 @@ install -m644 dialout_examples.ael %buildroot/etc/asterisk
 /etc/asterisk/dialout_examples.ael
 
 %changelog
+* Thu Oct 04 2011 Dmitriy Kruglikov <dkr@altlinux.ru>
+- Version up.
+
 * Thu Dec 03 2009 Alex Radetsky <rad@rad.kiev.ua> 0.7-alt1
 - Jump to same version with other tools 
 - added officepark.pl that uses perlapps/fcgi to find and park the call 
