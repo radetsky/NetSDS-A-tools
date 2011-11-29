@@ -1,0 +1,82 @@
+
+context localcity { 
+	 _XXXXXXX => { 
+		&out-call(2002439,${EXTEN},SIP/sitel);
+		Dial(SIP/sitel/${EXTEN},120,tT);  
+		Hangup(); 
+	}; 
+};
+
+context director_in { 
+	includes {
+		localpbx; 
+		uplink_out;
+		emergency;
+		mobile_out; 
+		ukraine; 
+		world; 
+	};
+	_555XXX => { 
+		ChanSpy(SIP/${EXTEN:3:3}); 
+		Hangup();
+	};
+};
+
+context localpbx { 
+	_2XX => { 
+		&local-call();
+		Dial(SIP/${EXTEN},120,tT);
+		Hangup();
+	};
+	199 => { 
+		&init-call();
+		Answer();
+		Echo();
+		Hangup(); 
+	};
+	*43 => { 
+		&init-call(); 
+		Answer();
+		Echo();
+		Hangup(); 	
+	}; 
+	7777 => { 
+		&init-call(); 
+		Answer();
+		Echo();
+		Hangup(); 	
+	};
+	*1 => { 
+        	Set(CHANNEL(language)=ru);
+      		&enter_queue(support);
+  	};
+	*2 => { 
+		Set(CHANNEL(language)=ru); 
+		&exit_queue(support); 
+	}; 
+
+}; 
+
+context emergency {
+	_1XX => { 
+		&out-call(2002439,${EXTEN},SIP/sitel);
+		Dial(SIP/sitel/${EXTEN},120,tT); 
+		Hangup();
+	};
+};
+
+context ukraine { 
+	_0XXXXXXXXX => { 
+		&out-call(2002439,${EXTEN},SIP/sitel);
+		Dial(SIP/sitel/${EXTEN},120,tT); 
+		Hangup(); 
+	};
+};
+
+context world { 
+	_00X. => { 
+		Hangup(17); 
+	};
+}; 
+
+

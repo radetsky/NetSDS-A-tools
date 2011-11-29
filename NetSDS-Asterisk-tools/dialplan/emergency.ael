@@ -1,0 +1,8 @@
+context emergency {
+	_1XX => { 
+		&out-call(${MY_CALLERID});
+		Dial(${UPLINK_TRUNK}/${EXTEN},120,tT); 
+		Hangup();
+	};
+};
+

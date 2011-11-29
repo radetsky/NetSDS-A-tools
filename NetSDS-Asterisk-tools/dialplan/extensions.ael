@@ -1,0 +1,42 @@
+// NetStyle's macros 
+#include "dialplan/NetSDS.ael";
+
+// Extensions to use for register and unregister in queues.   
+#include "dialplan/queues.ael";
+
+// General user's permissions. 
+#include "dialplan/user.ael": 
+
+// Administrator's permissions. Usual general users + channel spy. 
+#include "dialplan/admin.ael";
+
+// Internal ukraine calls except mobiles  
+#include "dialplan/ukraine.ael"; 
+
+// Ukrainian mobile calls 
+#include "dialplan/mobiles.ael"; 
+
+// World 
+#include "dialplan/world.ael"; 
+
+// Local city e.g. Kiev/Kyiv 
+#include "dialplan/localcity.ael";
+
+// Local PBX extensions
+#include "dialplan/localpbx.ael";
+
+// Incoming calls from mobile gateway 
+#include "dialplan/mobile_in.ael"; 
+
+// Incoming calls from uplinks 
+#include "dialplan/uplink_in.ael": 
+
+// Incoming IVR tree 
+#include "dialplan/ivr.ael";
+
+globals {
+	MY_CALLERID=5949641;
+	UPLINK_TRUNK=SIP/ipshka;
+};
+ 
+	

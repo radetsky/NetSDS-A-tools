@@ -1,0 +1,26 @@
+context localpbx { 
+	_2XX => { 
+		&local-call();
+		Dial(SIP/${EXTEN},120,tT);
+		Hangup();
+	};
+	199 => { 
+		&init-call();
+		Answer();
+		Echo();
+		Hangup(); 
+	};
+	*43 => { 
+		&init-call(); 
+		Answer();
+		Echo();
+		Hangup(); 	
+	}; 
+	7777 => { 
+		&init-call(); 
+		Answer();
+		Echo();
+		Hangup(); 	
+	};
+}; 
+

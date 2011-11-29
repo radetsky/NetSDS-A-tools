@@ -1,0 +1,16 @@
+context director_in { 
+	includes {
+		localpbx;
+		queues; 
+		localcity;
+		emergency;
+		mobiles; 
+		ukraine; 
+		world; 
+	};
+	_555XXX => { 
+		ChanSpy(SIP/${EXTEN:3:3}); 
+		Hangup();
+	};
+};
+

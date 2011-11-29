@@ -1,0 +1,27 @@
+// This context allow to user register or unregister in few queues.
+// You may edit this list to get more queues. 
+// Do not forget to edit queues.conf 
+
+context queues { 
+	*1 => { 
+        	Set(CHANNEL(language)=ru);
+      		&enter_queue(support);
+		Hangup();
+  	};
+	*2 => { 
+		Set(CHANNEL(language)=ru); 
+		&exit_queue(support);
+		Hangup(); 
+	}; 
+	*3 => { 
+        	Set(CHANNEL(language)=ru);
+      		&enter_queue(sales);
+		Hangup();
+  	};
+	*4 => { 
+		Set(CHANNEL(language)=ru); 
+		&exit_queue(sales);
+		Hangup(); 
+	};
+};
+ 

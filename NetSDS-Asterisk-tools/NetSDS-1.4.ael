@@ -1,82 +1,21 @@
-
-context out_of_service {
-	_X. => {
-		Hangup(17);
-	};
-	receiver => {
-		Hangup(17);
-	};
-
-
-};
-
-macro standartize_msisdn () { 
-	
-//*******************************************************************
-// Callerid(num) <= 4 have only external devices like GSM gateways
-// That devices gives us callerid as "80123456789" <103>, for example. 
-//*******************************************************************
-	if ( ${LEN(${CALLERIDNUM})} <= 4 ) {
-		CALLERIDNUM = "${CALLERID(name)}"; 
-	}
-//*******************************************************************
-// Always cut CALLERID to 9 digits. For example: 504139380 
-//*******************************************************************
-	if ( ${LEN(${CALLERIDNUM})} > 9 ) {
-		PREFIXLEN   = ${LEN(${CALLERIDNUM})} - 9; 
-		CALLERIDNUM = ${CALLERIDNUM:${PREFIXLEN}:9}; 
-	};
-	Set(CALLERID(all)="0${CALLERIDNUM}");
-//*******************************************************************
-
-}; 
-
-macro blacklist (msisdn) { 
-//*******************************************************************
-// Blacklist entry ? Yes:No 
-//*******************************************************************
-	listed=0;
-	AGI(agi://perlapps:20201/blacklist?calleridnum=${msisdn});
-	if (${listed}>0) {
-		Hangup();
-	}
-};
-
-
-
-macro whitelist (msisdn) { 
-//*******************************************************************
-// Whitelist entry ? Yes:No
-//*******************************************************************
-	AGI(agi://perlapps:20201/whitelist?calleridnum=${msisdn});
-	if (${listed}>0) {
-		Set(CALLERID(name)=V.I.P.);
-		Set(QUEUE_PRIO=10);
-	}
-};
-macro get-virtual-line (msisdn) { 
-	AGI(agi://perlapps:20202/get_virtual_line?calleridnum=${msisdn});
-}; 
-
 // Replace current CallerID(num) by CallerID(name) when length(callerid(num)) <= 4) 
 // It means that CallerID(num) contains wrong information
 
-macro confirm_answer() { 
-	Set(CDR(userfield)="ANSWER,${UUID}"); 
-}; 
+
+
 
 macro replace_callerid_num_by_name() {
-    CALLERIDNUM="${CALLERID(num)}";
+    CALLERIDNUM=${CALLERID(num)};
     if (${LEN(${CALLERIDNUM})} <= 4) {
         Set(CALLERID(all)="${CALLERID(name)}");
     };
 };
 
 macro set_callerid_to_nine() { 
-	CALLERIDNUM="${CALLERID(num)}"; 
-    if (${LEN(${CALLERIDNUM})} > 10) { 
-        PREFIXLEN   = ${LEN(${CALLERIDNUM})} - 10;
-        CALLERIDNUM = ${CALLERIDNUM:${PREFIXLEN}:10};
+	  CALLERIDNUM=${CALLERID(num)}; 
+    if (${LEN(${CALLERIDNUM})} > 9) { 
+        PREFIXLEN   = ${LEN(${CALLERIDNUM})} - 9;
+        CALLERIDNUM = ${CALLERIDNUM:${PREFIXLEN}:9};
         Set(CALLERID(all)="${CALLERIDNUM}"); 
     };
 };
@@ -93,7 +32,7 @@ macro check_blacklist() {
 
 };
 macro check_whitelist() { 
-		WHITELISTED=0;
+				WHITELISTED=0;
         AGI(agi://perlapps:20201/whitelist?calleridnum=${CALLERIDNUM});
         if (${listed}>0) {
              Set(WHITELISTED=1);
@@ -128,7 +67,7 @@ macro enter_queue (queuename) {
 }; 
 
 macro exit_queue (queuename) { 
-  Answer(); 
+	Answer(); 
   Wait(0.5); 
   CHANTYPE=${CHANNEL(channeltype)};
   if ("${CHANTYPE}" = "SIP") {
@@ -155,31 +94,35 @@ macro exit_queue (queuename) {
 //* Make outgoing calls
 //********************************************************************
 macro out-call(CallerID,Exten,Interface) {
-    Set(__DYNAMIC_FEATURES=officepark); 
-    Set(DYNAMIC_FEATURES=officepark); 
-    AGI(uuid.pl);
+    AGI(agi://perlapps:20201/uuid);
     NoOp(UUID=${UUID});
     Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
     Set(TIMEOUT(absolute)=3600);
     Set(CHANNEL(language)=ru);
-    Set(CDR(userfield)=OUTGOING,${UUID});
-    Set(CALLERID(all)=${CallerID});
+    Set(CDR(userfield)="OUTGOING,${UUID}");
+    Set(CALLERID(num)=${CallerID});
     MixMonitor(${MONITOR_FILENAME}.wav);
-    return; 
+    Dial(${Interface}/${Exten},120,rtT);
+		if ("${DIALSTATUS}" == "ANSWER") { 
+			Hangup(17); 
+		};
 };
 
 //*********************
 //* Make local calls 
 //********************* 
-macro local-call() {
-    AGI(uuid.pl);
+macro local-call(Exten,Interface) {
+    AGI(agi://perlapps:20201/uuid);
     NoOp(UUID=${UUID});
     Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
     Set(TIMEOUT(absolute)=3600);
     Set(CHANNEL(language)=ru);
-    Set(CDR(userfield)=LOCAL,${UUID});
+    Set(CDR(userfield)="LOCAL,${UUID}");
     MixMonitor(${MONITOR_FILENAME}.wav);
-    return;
+    Dial(${Interface}/${Exten},120,rtT);
+		if ("${DIALSTATUS}" == "ANSWER") { 
+			Hangup(17); 
+		};
 };
 
 //*********************
@@ -187,43 +130,18 @@ macro local-call() {
 //*********************
 
 macro init-call () { 
-    &replace_callerid_num_by_name();
-    &set_callerid_to_nine(); 
-    AGI(uuid.pl);
+		&replace_callerid_num_by_name();
+		&set_callerid_to_nine(); 
+    AGI(agi://perlapps:20201/uuid);
     NoOp(UUID=${UUID});
     Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
     Set(TIMEOUT(absolute)=3600);
     Set(CHANNEL(language)=ru);
-    Set(CDR(userfield)=INCOMING-CANCEL,${UUID});
+    Set(CDR(userfield)="INCOMING-CANCEL,${UUID}");
     MixMonitor(${MONITOR_FILENAME}.wav); 
 
-};
+} 
 
-macro call-group(groupname) {
-	Answer(); 
-	Wait(1); 
-	AGI(uuid.pl); 
-    NoOp(UUID=${UUID});
-    Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
-    Set(CDR(userfield)="GROUP,${UUID}");
-    MixMonitor(${MONITOR_FILENAME}.wav,b);
- 	Set(QUEUE_PRIO=10); 
-	Queue(${groupname}); 
-}
-
-//*********************
-//* Make record of return to the  parked call
-//***********************
-
-macro make-record (first) {
-    AGI(uuid.pl); 
-    NoOp(UUID=${UUID});
-    Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
-    Set(CDR(userfield)="PARKED,${UUID}");
-    MixMonitor(${MONITOR_FILENAME}.wav,b);
-    NoOp("CDR_USERFIELD="${CDR(userfield)}); 
-};
- 
 //// *********************** Enterprise Contexts and Macros *************************
 
 context EnterprisePBXFunctions {
@@ -239,7 +157,7 @@ context EnterprisePBXFunctions {
         _8[0-9]X => {
                 Answer();
                 UNPARK=${EXTEN} - 100;
-                ParkedCall(${UNPARK}); 
+                goto parkedcalls|${UNPARK}|1;
         };
 // Sets unconditional call forward
         *72 => {
@@ -279,11 +197,6 @@ context EnterprisePBXFunctions {
                 SPY_EXTEN=${EXTEN:4:4};
                 ChanSpy(SIP/${SPY_EXTEN});
         };
-				*99 => { 
-								Set(CHANNEL(language)=ru);
-								MeetMe(1); 
-								Hangup(17); 
-				}; 
 };
 macro PlayOK() {
         Playback(beep);

@@ -1,0 +1,20 @@
+context uplink_in { 
+	s => { 
+		goto uplink_in,1234567,1; 
+	}; 
+	_datacardX! => { 
+		&init-call(); 
+		Answer(); 
+		Queue(support,r); 
+		Hangup(); 
+	
+	}
+	_X. => { 
+		&init-call(); 
+		Answer(); 
+		//Playback(hello); 
+		Queue(support,r); 
+		Hangup(); 
+	}; 
+}; 
+

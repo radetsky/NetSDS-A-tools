@@ -1,139 +1,63 @@
 
-context out_of_service {
-	_X. => {
-		Hangup(17);
-	};
-	receiver => {
-		Hangup(17);
-	};
-
-
-};
+// NetStyle's macro list. 
+// You may use it for free. 
 
 macro standartize_msisdn () { 
 	
 //*******************************************************************
 // Callerid(num) <= 4 have only external devices like GSM gateways
-// That devices gives us callerid as "80123456789" <103>, for example. 
+// That devices gives us callerid as "80123456789" <103>, for example.
+// Always cut CALLERID to 10 digits. For example: 0504139380  
 //*******************************************************************
 	if ( ${LEN(${CALLERIDNUM})} <= 4 ) {
 		CALLERIDNUM = "${CALLERID(name)}"; 
 	}
-//*******************************************************************
-// Always cut CALLERID to 9 digits. For example: 504139380 
-//*******************************************************************
-	if ( ${LEN(${CALLERIDNUM})} > 9 ) {
-		PREFIXLEN   = ${LEN(${CALLERIDNUM})} - 9; 
-		CALLERIDNUM = ${CALLERIDNUM:${PREFIXLEN}:9}; 
+	if ( ${LEN(${CALLERIDNUM})} > 10 ) {
+		PREFIXLEN   = ${LEN(${CALLERIDNUM})} - 10; 
+		CALLERIDNUM = ${CALLERIDNUM:${PREFIXLEN}:10}; 
 	};
 	Set(CALLERID(all)="0${CALLERIDNUM}");
-//*******************************************************************
-
+	return;
 }; 
-
-macro blacklist (msisdn) { 
-//*******************************************************************
-// Blacklist entry ? Yes:No 
-//*******************************************************************
-	listed=0;
-	AGI(agi://perlapps:20201/blacklist?calleridnum=${msisdn});
-	if (${listed}>0) {
-		Hangup();
-	}
-};
-
-
-
-macro whitelist (msisdn) { 
-//*******************************************************************
-// Whitelist entry ? Yes:No
-//*******************************************************************
-	AGI(agi://perlapps:20201/whitelist?calleridnum=${msisdn});
-	if (${listed}>0) {
-		Set(CALLERID(name)=V.I.P.);
-		Set(QUEUE_PRIO=10);
-	}
-};
-macro get-virtual-line (msisdn) { 
-	AGI(agi://perlapps:20202/get_virtual_line?calleridnum=${msisdn});
-}; 
-
-// Replace current CallerID(num) by CallerID(name) when length(callerid(num)) <= 4) 
-// It means that CallerID(num) contains wrong information
 
 macro confirm_answer() { 
 	Set(CDR(userfield)="ANSWER,${UUID}"); 
 }; 
 
-macro replace_callerid_num_by_name() {
-    CALLERIDNUM="${CALLERID(num)}";
-    if (${LEN(${CALLERIDNUM})} <= 4) {
-        Set(CALLERID(all)="${CALLERID(name)}");
-    };
-};
-
-macro set_callerid_to_nine() { 
-	CALLERIDNUM="${CALLERID(num)}"; 
-    if (${LEN(${CALLERIDNUM})} > 10) { 
-        PREFIXLEN   = ${LEN(${CALLERIDNUM})} - 10;
-        CALLERIDNUM = ${CALLERIDNUM:${PREFIXLEN}:10};
-        Set(CALLERID(all)="${CALLERIDNUM}"); 
-    };
-};
-
-macro check_blacklist() { 
-				//*******************************************************************
-				// Blacklist entry ? Yes:No
-				//*******************************************************************
-        listed=0;
-        AGI(agi://perlapps:20201/blacklist?calleridnum=${CALLERIDNUM});
-        if (${listed}>0) {
-             Hangup(17);
-        }
-
-};
-macro check_whitelist() { 
-		WHITELISTED=0;
-        AGI(agi://perlapps:20201/whitelist?calleridnum=${CALLERIDNUM});
-        if (${listed}>0) {
-             Set(WHITELISTED=1);
-        };
-};
-
 macro enter_queue (queuename) {
-		Answer();
-		Wait(0.5);
-		CHANTYPE=${CHANNEL(channeltype)};
-    if ("${CHANTYPE}" = "SIP") {
-			AddQueueMember(${queuename});
-    	switch(${AQMSTATUS}) {
-        case ADDED:
-            Playback (agent-loginok);
-            AGENTIP=${SIPPEER(${CALLERID(num)})};
-            Set(DB(${CALLERID(num)}/ip)=${AGENTIP});
-            break;
-        case MEMBERALREADY:
-            Playback (agent-alreadyon);
-            AGENTIP=${SIPPEER(${CALLERID(num)})};
-            Set(DB(${CALLERID(num)}/ip)=${AGENTIP});
-            break;
-        case NOSUCHQUEUE:
-            Playback (agent-incorrect);
-            break;
-        default:
-            break;
-    	}
-		}
-   	Hangup(17);
+	Answer();
+	Wait(0.5);
+	CHANTYPE=${CHANNEL(channeltype)};
+    	if ("${CHANTYPE}" = "SIP") {
+		AddQueueMember(${queuename});
+    		switch(${AQMSTATUS}) {
+        		case ADDED:
+            			Playback (agent-loginok);
+            			AGENTIP=${SIPPEER(${CALLERID(num)})};
+            			Set(DB(${CALLERID(num)}/ip)=${AGENTIP});
+            			break;
+        		case MEMBERALREADY:
+            			Playback (agent-alreadyon);
+            			AGENTIP=${SIPPEER(${CALLERID(num)})};
+            			Set(DB(${CALLERID(num)}/ip)=${AGENTIP});
+            			break;
+        		case NOSUCHQUEUE:
+            			Playback (agent-incorrect);
+            			break;
+        		default:
+           			 break;
+    		}
+	}
+	return;
 }; 
 
 macro exit_queue (queuename) { 
-  Answer(); 
-  Wait(0.5); 
-  CHANTYPE=${CHANNEL(channeltype)};
-  if ("${CHANTYPE}" = "SIP") {
+	Answer(); 
+  	Wait(0.5); 
+  	CHANTYPE=${CHANNEL(channeltype)};
+  	if ("${CHANTYPE}" = "SIP") {
 		RemoveQueueMember(${queuename});
-          switch(${RQMSTATUS}) {
+          	switch(${RQMSTATUS}) {
            case REMOVED:
                Playback (agent-loggedoff);
                DBDel(${CALLERID(num)}/ip);
@@ -145,16 +69,16 @@ macro exit_queue (queuename) {
                Playback (agent-incorrect);
                break;
            default:
-           break;
-    };
-  }; 
-  Hangup(17); 
+           	break;
+    	};
+  	}; 
+ 	return; 
 }; 
 
 //********************************************************************
 //* Make outgoing calls
 //********************************************************************
-macro out-call(CallerID,Exten,Interface) {
+macro out-call(CallerID) {
     Set(__DYNAMIC_FEATURES=officepark); 
     Set(DYNAMIC_FEATURES=officepark); 
     AGI(uuid.pl);
@@ -203,10 +127,10 @@ macro call-group(groupname) {
 	Answer(); 
 	Wait(1); 
 	AGI(uuid.pl); 
-    NoOp(UUID=${UUID});
-    Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
-    Set(CDR(userfield)="GROUP,${UUID}");
-    MixMonitor(${MONITOR_FILENAME}.wav,b);
+    	NoOp(UUID=${UUID});
+    	Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
+    	Set(CDR(userfield)="GROUP,${UUID}");
+    	MixMonitor(${MONITOR_FILENAME}.wav,b);
  	Set(QUEUE_PRIO=10); 
 	Queue(${groupname}); 
 }
@@ -279,11 +203,11 @@ context EnterprisePBXFunctions {
                 SPY_EXTEN=${EXTEN:4:4};
                 ChanSpy(SIP/${SPY_EXTEN});
         };
-				*99 => { 
-								Set(CHANNEL(language)=ru);
-								MeetMe(1); 
-								Hangup(17); 
-				}; 
+	*99 => { 
+		Set(CHANNEL(language)=ru);
+		MeetMe(1); 
+		Hangup(17); 
+	}; 
 };
 macro PlayOK() {
         Playback(beep);

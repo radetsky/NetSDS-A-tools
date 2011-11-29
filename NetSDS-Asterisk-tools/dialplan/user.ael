@@ -1,0 +1,16 @@
+// This context shows permissions that general user have. 
+// E.g. localpbx calls, etc. 
+// remember that AEL parser searches extensions in included context as contexts lists. 
+
+context user_in { 
+	includes { 
+		localpbx;
+		queues;
+		localcity;
+		emergency;
+		mobiles; 
+		ukraine; 
+		world; 
+	}; 
+}; 
+

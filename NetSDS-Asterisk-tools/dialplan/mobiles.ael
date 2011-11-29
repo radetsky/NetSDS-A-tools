@@ -1,0 +1,58 @@
+context mobile_out { 
+	_050X. => { 
+		&out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT); 
+		Hangup(); 
+	}
+	_066X. => {
+                &out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+        }
+	_095X. => {
+                &out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+        }
+	_099X. => {
+                &out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+        }
+	_067X. => {
+                &out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+        }
+	_068X. => { 
+		&out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+	}
+	_096X. => {
+		&out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+	}
+	_097X. => {
+		&out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+	}
+	_098X. => {
+		&out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+	}
+	_063X. => { 
+		&out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+	} 
+	_093X. => { 
+		&out-call(2002439,${EXTEN},SIP/voip-gate);
+		Dial(SIP/voip-gate/${EXTEN},120,tT);
+                Hangup();
+	}
+};
+

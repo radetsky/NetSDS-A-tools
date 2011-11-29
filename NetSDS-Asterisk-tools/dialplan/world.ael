@@ -1,0 +1,6 @@
+context world { 
+	_00X. => { 
+		Hangup(17); 
+	};
+}; 
+

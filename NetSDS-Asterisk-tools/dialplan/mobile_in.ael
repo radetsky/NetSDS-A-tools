@@ -1,0 +1,10 @@
+
+context mobile_in { 
+	_X. => {
+		Answer(); 
+		Playback(hello); 
+		Queue(support,r); 
+		Hangup(); 
+	};
+};
+

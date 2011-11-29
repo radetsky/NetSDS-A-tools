@@ -1,0 +1,8 @@
+context localcity { 
+	 _XXXXXXX => { 
+		&out-call(${MY_CALLERID});
+		Dial(${UPLINK_TRUNK}/${EXTEN},120,tT);  
+		Hangup(); 
+	}; 
+};
+
