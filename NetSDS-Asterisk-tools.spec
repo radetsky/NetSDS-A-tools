@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt1
+Release: alt2
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -46,7 +46,8 @@ install -m755 officepark.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 make_sip_conf.pl %buildroot/usr/bin/
 install -m644 NetSDS.ael %buildroot/usr/share/doc/%origname
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
-
+cp -ar dialplan %buildroot/usr/share/doc/%origname/
+cp -ar sql %buildroot/usr/share/doc/%origname
 
 %files
 /usr/bin/callback.sh
@@ -56,11 +57,15 @@ install -m644 dialout_examples.ael %buildroot/etc/asterisk
 /usr/lib/asterisk/agi-bin/confirm_call.sh
 /usr/lib/asterisk/agi-bin/officepark.pl
 /usr/bin/make_sip_conf.pl 
+/usr/share/doc/NetSDS-Asterisk-tools/*
 /usr/share/doc/NetSDS-Asterisk-tools/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
 
 %changelog
-* Thu Oct 04 2011 Dmitriy Kruglikov <dkr@altlinux.ru>
+* Wed Nov 30 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt2
+- New dialplan and sql files
+
+* Thu Oct 04 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt1
 - Version up.
 
 * Thu Dec 03 2009 Alex Radetsky <rad@rad.kiev.ua> 0.7-alt1
