@@ -9,8 +9,6 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET escape_string_warning = off;
 
-create user asterisk with password 'supersecret'; 
-
 --
 -- Name: asterisk; Type: DATABASE; Schema: -; Owner: asterisk
 --
@@ -193,25 +191,28 @@ r routing.route%ROWTYPE;
 rname varchar(32);
 
 begin
-
--- Try to find direction by prefix; 
+--
+-- Try to find direction by prefix;
+-- 
 select * into dir from routing.directions 
-	where dr_prefix ~* $1 
+	where $1 ~ dr_prefix 
 	order by dr_prio 
 	asc 
 	limit 1; 
 
 if not found then 
-	return 'NO DIRECTION';
+	raise exception 'NO DIRECTION';
 end if; 
-
+--
 -- Try to find route record that will give us type and destination id.
+--
 select * into r from routing.route 
 	where route_direction_id = dir.dr_list_item 
-	order by route_prio asc limit 1; 
+	and route_step = $2  
+	order by route_step asc limit 1; 
 
 if not found then 
-	return 'NO ROUTE';
+	raise exception 'NO ROUTE';
 end if; 
 
 -- Try to find destination id and name; 
@@ -219,7 +220,7 @@ end if;
 if r.route_type = 'user' then 
 	select name into rname from public.sip_users where id=r.route_dest_id; 
 	if not found then 
-		return 'NO DESTINATION'; 
+		raise exception 'NO DESTINATION'; 
 	end if; 
 	return rname;
 end if; 
@@ -231,7 +232,7 @@ end if;
 if r.route_type = 'trunk' then 
 	select name into rname from public.sip_peers where id=r.route_desi_id; 
 	if not found then 
-		return 'NO DESTINATION'; 
+		raise exception 'NO DESTINATION'; 
 	end if;
 	return rname; 
 end if; 
@@ -253,6 +254,87 @@ ALTER FUNCTION routing.get_dial_route(destination character varying, try integer
 --
 
 COMMENT ON FUNCTION get_dial_route(destination character varying, try integer) IS 'Main function for this software. Return the name of the peer/user depends on destination number and count of tries. ';
+
+
+--
+-- Name: get_permission(character varying, character varying); Type: FUNCTION; Schema: routing; Owner: asterisk
+--
+
+CREATE FUNCTION get_permission(peer_name character varying, number_b character varying) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $_$
+declare 
+
+UID bigint;
+u_type varchar(4);
+DIR_ID bigint; 
+
+begin
+
+--
+-- we getting UID and type (user,peer)
+--
+
+u_type = 'peer'; 
+select id from public.sip_peers where name=$1 into UID;
+if not found then 
+    u_type = 'user';
+    select id from public.sip_users where name=$1 into UID; 
+    if not found then
+	raise exception 'NO SOURCE PEER/USER BY CHANNEL';
+    end if;
+end if; 
+
+--
+-- gettting direction_id by number_b
+-- 
+
+select dr_list_item into DIR_ID from routing.directions 
+	where $2 ~ dr_prefix 
+	order by dr_prio 
+	asc 
+	limit 1; 
+
+if not found then 
+	raise exception 'NO DESTINATION BY NUMBER_B'; 
+end if; 
+
+
+
+perform id from routing.permissions 
+	where direction_id=DIR_ID 
+	and peer_id=UID 
+	and peer_type=u_type; 
+
+if not found then 
+	return false; 
+end if; 
+
+return true; 
+
+end;
+
+--
+-- Функция завершена 30.11.11
+--
+$_$;
+
+
+ALTER FUNCTION routing.get_permission(peer_name character varying, number_b character varying) OWNER TO asterisk;
+
+--
+-- Name: FUNCTION get_permission(peer_name character varying, number_b character varying); Type: COMMENT; Schema: routing; Owner: asterisk
+--
+
+COMMENT ON FUNCTION get_permission(peer_name character varying, number_b character varying) IS 'Процедура получения прав доступа на текущий звонок с номера А (канала А) на номер Б (направление Б). Исходные данные: 
+- обрезанное имя канала (SIP/kyivstar-000001 = kyivstar), 
+- номер Б 
+
+Задача: 
+1. найти указанное направление по номеру Б. 
+2. Получить хотя бы одну запись из таблицы permissions. 
+
+Тогда право есть. Иначе - permission denied and get out :-) ';
 
 
 --
@@ -299,6 +381,184 @@ SET search_path = public, pg_catalog;
 SET default_tablespace = '';
 
 SET default_with_oids = false;
+
+--
+-- Name: blacklist; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE blacklist (
+    id bigint NOT NULL,
+    number character(20) NOT NULL,
+    reason character varying(255) DEFAULT NULL::character varying,
+    create_date timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.blacklist OWNER TO asterisk;
+
+--
+-- Name: blacklist_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE blacklist_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.blacklist_id_seq OWNER TO asterisk;
+
+--
+-- Name: blacklist_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE blacklist_id_seq OWNED BY blacklist.id;
+
+
+--
+-- Name: cdr; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE cdr (
+    calldate timestamp with time zone DEFAULT now() NOT NULL,
+    clid character varying(80) DEFAULT ''::character varying NOT NULL,
+    src character varying(80) DEFAULT ''::character varying NOT NULL,
+    dst character varying(80) DEFAULT ''::character varying NOT NULL,
+    dcontext character varying(80) DEFAULT ''::character varying NOT NULL,
+    channel character varying(80) DEFAULT ''::character varying NOT NULL,
+    dstchannel character varying(80) DEFAULT ''::character varying NOT NULL,
+    lastapp character varying(80) DEFAULT ''::character varying NOT NULL,
+    lastdata character varying(80) DEFAULT ''::character varying NOT NULL,
+    duration bigint DEFAULT (0)::bigint NOT NULL,
+    billsec bigint DEFAULT (0)::bigint NOT NULL,
+    disposition character varying(45) DEFAULT ''::character varying NOT NULL,
+    amaflags bigint DEFAULT (0)::bigint NOT NULL,
+    accountcode character varying(20) DEFAULT ''::character varying NOT NULL,
+    uniqueid character varying(32) DEFAULT ''::character varying NOT NULL,
+    userfield character varying(255) DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE public.cdr OWNER TO asterisk;
+
+--
+-- Name: extensions_conf; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE extensions_conf (
+    id bigint NOT NULL,
+    context character varying(20) DEFAULT ''::character varying NOT NULL,
+    exten character varying(20) DEFAULT ''::character varying NOT NULL,
+    priority smallint DEFAULT 0 NOT NULL,
+    app character varying(20) DEFAULT ''::character varying NOT NULL,
+    appdata character varying(128)
+);
+
+
+ALTER TABLE public.extensions_conf OWNER TO asterisk;
+
+--
+-- Name: extensions_conf_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE extensions_conf_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.extensions_conf_id_seq OWNER TO asterisk;
+
+--
+-- Name: extensions_conf_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE extensions_conf_id_seq OWNED BY extensions_conf.id;
+
+
+--
+-- Name: queue_log; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE queue_log (
+    id bigint NOT NULL,
+    callid character varying(32),
+    queuename character varying(32),
+    agent character varying(32),
+    event character varying(32),
+    data character varying(255),
+    "time" timestamp without time zone
+);
+
+
+ALTER TABLE public.queue_log OWNER TO asterisk;
+
+--
+-- Name: queue_log_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE queue_log_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.queue_log_id_seq OWNER TO asterisk;
+
+--
+-- Name: queue_log_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE queue_log_id_seq OWNED BY queue_log.id;
+
+
+--
+-- Name: queue_parsed; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE queue_parsed (
+    id bigint NOT NULL,
+    callid character varying(32) DEFAULT ''::character varying NOT NULL,
+    queue character varying(32) DEFAULT 'default'::character varying NOT NULL,
+    "time" timestamp without time zone NOT NULL,
+    callerid character varying(32) DEFAULT ''::character varying NOT NULL,
+    agentid character varying(32) DEFAULT ''::character varying NOT NULL,
+    status character varying(32) DEFAULT ''::character varying NOT NULL,
+    success integer DEFAULT 0 NOT NULL,
+    holdtime integer DEFAULT 0 NOT NULL,
+    calltime integer DEFAULT 0 NOT NULL,
+    "position" integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.queue_parsed OWNER TO asterisk;
+
+--
+-- Name: queue_parsed_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE queue_parsed_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.queue_parsed_id_seq OWNER TO asterisk;
+
+--
+-- Name: queue_parsed_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE queue_parsed_id_seq OWNED BY queue_parsed.id;
+
 
 --
 -- Name: sip_peers; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
@@ -452,6 +712,41 @@ ALTER TABLE public.sip_users_id_seq OWNER TO asterisk;
 ALTER SEQUENCE sip_users_id_seq OWNED BY sip_users.id;
 
 
+--
+-- Name: whitelist; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE whitelist (
+    id bigint NOT NULL,
+    number character(20) NOT NULL,
+    reason character varying(255) DEFAULT NULL::character varying,
+    create_date timestamp without time zone DEFAULT now()
+);
+
+
+ALTER TABLE public.whitelist OWNER TO asterisk;
+
+--
+-- Name: whitelist_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE whitelist_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.whitelist_id_seq OWNER TO asterisk;
+
+--
+-- Name: whitelist_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE whitelist_id_seq OWNED BY whitelist.id;
+
+
 SET search_path = routing, pg_catalog;
 
 --
@@ -566,6 +861,48 @@ ALTER TABLE routing."directions_list_DLIST_ID_seq" OWNER TO asterisk;
 --
 
 ALTER SEQUENCE "directions_list_DLIST_ID_seq" OWNED BY directions_list.dlist_id;
+
+
+--
+-- Name: permissions; Type: TABLE; Schema: routing; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE permissions (
+    id bigint NOT NULL,
+    direction_id bigint,
+    peer_id bigint,
+    peer_type character varying(4) DEFAULT "current_user"() NOT NULL
+);
+
+
+ALTER TABLE routing.permissions OWNER TO asterisk;
+
+--
+-- Name: TABLE permissions; Type: COMMENT; Schema: routing; Owner: asterisk
+--
+
+COMMENT ON TABLE permissions IS 'Права доступа к разным направлениям для peers/users. ';
+
+
+--
+-- Name: permissions_id_seq; Type: SEQUENCE; Schema: routing; Owner: asterisk
+--
+
+CREATE SEQUENCE permissions_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE routing.permissions_id_seq OWNER TO asterisk;
+
+--
+-- Name: permissions_id_seq; Type: SEQUENCE OWNED BY; Schema: routing; Owner: asterisk
+--
+
+ALTER SEQUENCE permissions_id_seq OWNED BY permissions.id;
 
 
 --
@@ -716,6 +1053,34 @@ SET search_path = public, pg_catalog;
 -- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
 --
 
+ALTER TABLE blacklist ALTER COLUMN id SET DEFAULT nextval('blacklist_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
+ALTER TABLE extensions_conf ALTER COLUMN id SET DEFAULT nextval('extensions_conf_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
+ALTER TABLE queue_log ALTER COLUMN id SET DEFAULT nextval('queue_log_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
+ALTER TABLE queue_parsed ALTER COLUMN id SET DEFAULT nextval('queue_parsed_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
 ALTER TABLE sip_peers ALTER COLUMN id SET DEFAULT nextval('sip_peers_id_seq'::regclass);
 
 
@@ -724,6 +1089,13 @@ ALTER TABLE sip_peers ALTER COLUMN id SET DEFAULT nextval('sip_peers_id_seq'::re
 --
 
 ALTER TABLE sip_users ALTER COLUMN id SET DEFAULT nextval('sip_users_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
+ALTER TABLE whitelist ALTER COLUMN id SET DEFAULT nextval('whitelist_id_seq'::regclass);
 
 
 SET search_path = routing, pg_catalog;
@@ -740,6 +1112,13 @@ ALTER TABLE directions ALTER COLUMN dr_id SET DEFAULT nextval('directions_dr_id_
 --
 
 ALTER TABLE directions_list ALTER COLUMN dlist_id SET DEFAULT nextval('"directions_list_DLIST_ID_seq"'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: routing; Owner: asterisk
+--
+
+ALTER TABLE permissions ALTER COLUMN id SET DEFAULT nextval('permissions_id_seq'::regclass);
 
 
 --
@@ -808,6 +1187,14 @@ ALTER TABLE ONLY directions
 
 
 --
+-- Name: permissions_pkey; Type: CONSTRAINT; Schema: routing; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY permissions
+    ADD CONSTRAINT permissions_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: route_pkey; Type: CONSTRAINT; Schema: routing; Owner: asterisk; Tablespace: 
 --
 
@@ -842,6 +1229,13 @@ ALTER TABLE ONLY trunkgroup_items
 SET search_path = public, pg_catalog;
 
 --
+-- Name: cdr_calldate; Type: INDEX; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE INDEX cdr_calldate ON cdr USING btree (calldate);
+
+
+--
 -- Name: sip_peers_name; Type: INDEX; Schema: public; Owner: asterisk; Tablespace: 
 --
 
@@ -856,6 +1250,13 @@ CREATE UNIQUE INDEX sip_users_name ON sip_users USING btree (name);
 
 
 SET search_path = routing, pg_catalog;
+
+--
+-- Name: fki_direction_in_dlist; Type: INDEX; Schema: routing; Owner: asterisk; Tablespace: 
+--
+
+CREATE INDEX fki_direction_in_dlist ON permissions USING btree (direction_id);
+
 
 --
 -- Name: fki_dr_name; Type: INDEX; Schema: routing; Owner: asterisk; Tablespace: 
@@ -894,6 +1295,14 @@ ALTER TABLE ONLY directions
 
 
 --
+-- Name: fk_direction_in_dlist; Type: FK CONSTRAINT; Schema: routing; Owner: asterisk
+--
+
+ALTER TABLE ONLY permissions
+    ADD CONSTRAINT fk_direction_in_dlist FOREIGN KEY (direction_id) REFERENCES directions_list(dlist_id) ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+
+--
 -- Name: route_route_direction_id_fkey; Type: FK CONSTRAINT; Schema: routing; Owner: asterisk
 --
 
@@ -925,100 +1334,6 @@ REVOKE ALL ON SCHEMA public FROM PUBLIC;
 REVOKE ALL ON SCHEMA public FROM postgres;
 GRANT ALL ON SCHEMA public TO postgres;
 GRANT ALL ON SCHEMA public TO PUBLIC;
-
-
-set search_path to public; 
-
-CREATE TABLE blacklist (
-    id bigserial NOT NULL,
-    number character(20) NOT NULL,
-    reason character varying(255) DEFAULT NULL::character varying,
-    create_date timestamp without time zone DEFAULT now()
-);
-
-CREATE TABLE whitelist (
-    id bigserial NOT NULL,
-    number character(20) NOT NULL,
-    reason character varying(255) DEFAULT NULL::character varying,
-    create_date timestamp without time zone DEFAULT now()
-);
-
-ALTER TABLE public.blacklist OWNER TO asterisk;
-ALTER TABLE public.whitelist OWNER TO asterisk;
-
-
-CREATE TABLE cdr (
-    calldate timestamp with time zone DEFAULT now() NOT NULL,
-    clid character varying(80) DEFAULT ''::character varying NOT NULL,
-    src character varying(80) DEFAULT ''::character varying NOT NULL,
-    dst character varying(80) DEFAULT ''::character varying NOT NULL,
-    dcontext character varying(80) DEFAULT ''::character varying NOT NULL,
-    channel character varying(80) DEFAULT ''::character varying NOT NULL,
-    dstchannel character varying(80) DEFAULT ''::character varying NOT NULL,
-    lastapp character varying(80) DEFAULT ''::character varying NOT NULL,
-    lastdata character varying(80) DEFAULT ''::character varying NOT NULL,
-    duration bigint DEFAULT (0)::bigint NOT NULL,
-    billsec bigint DEFAULT (0)::bigint NOT NULL,
-    disposition character varying(45) DEFAULT ''::character varying NOT NULL,
-    amaflags bigint DEFAULT (0)::bigint NOT NULL,
-    accountcode character varying(20) DEFAULT ''::character varying NOT NULL,
-    uniqueid character varying(32) DEFAULT ''::character varying NOT NULL,
-    userfield character varying(255) DEFAULT ''::character varying NOT NULL
-);
-
-CREATE INDEX cdr_calldate ON cdr USING btree (calldate);
-
-ALTER TABLE public.cdr OWNER TO asterisk;
-
-
-CREATE TABLE extensions_conf (
-    id bigserial NOT NULL,
-    context character varying(20) DEFAULT ''::character varying NOT NULL,
-    exten character varying(20) DEFAULT ''::character varying NOT NULL,
-    priority smallint DEFAULT 0 NOT NULL,
-    app character varying(20) DEFAULT ''::character varying NOT NULL,
-    appdata character varying(128)
-);
-
-
-ALTER TABLE public.extensions_conf OWNER TO asterisk;
--- Name: queue_log; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
---
-
-CREATE TABLE queue_log (
-    id bigserial NOT NULL,
-    callid character varying(32),
-    queuename character varying(32),
-    agent character varying(32),
-    event character varying(32),
-    data character varying(255),
-    "time" timestamp without time zone
-);
-
-
-ALTER TABLE public.queue_log OWNER TO asterisk;
-
---
--- Name: queue_parsed; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
---
-
-CREATE TABLE queue_parsed (
-    id bigserial NOT NULL,
-    callid character varying(32) DEFAULT ''::character varying NOT NULL,
-    queue character varying(32) DEFAULT 'default'::character varying NOT NULL,
-    "time" timestamp without time zone NOT NULL,
-    callerid character varying(32) DEFAULT ''::character varying NOT NULL,
-    agentid character varying(32) DEFAULT ''::character varying NOT NULL,
-    status character varying(32) DEFAULT ''::character varying NOT NULL,
-    success integer DEFAULT 0 NOT NULL,
-    holdtime integer DEFAULT 0 NOT NULL,
-    calltime integer DEFAULT 0 NOT NULL,
-    "position" integer DEFAULT 0 NOT NULL
-);
-
-
-ALTER TABLE public.queue_parsed OWNER TO asterisk;
-
 
 
 --
