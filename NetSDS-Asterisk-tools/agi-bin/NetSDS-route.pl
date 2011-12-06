@@ -161,7 +161,8 @@ sub _get_dial_route {
     my $try   = shift;
 
     $this->dbh->begin_work or die $this->dbh->errstr;
-    my $sth = $this->dbh->prepare("select * from routing.get_dial_route (?,?)");
+    my $sth =
+      $this->dbh->prepare("select * from routing.get_dial_route3 (?,?)");
     eval { my $rv = $sth->execute( $exten, $try ); };
     if ($@) {
         $this->log( "warning", $this->dbh->errstr );
@@ -169,9 +170,8 @@ sub _get_dial_route {
         exit(-1);
     }
     my $result = $sth->fetchrow_hashref;
-	$this->dbh->rollback(); 
-    return $result->{'get_dial_route'};
-
+    $this->dbh->commit();
+    return $result;
 
 }
 
@@ -196,16 +196,39 @@ sub process {
 
     $this->_get_permissions( $this->{peername}, $this->{extension} );
 
-    # Get dial route
+    my $tgrp_first;
 
+    # Get dial route
     for ( my $current_try = 1 ; $current_try <= 5 ; $current_try++ ) {
-        my $res = $this->_get_dial_route( $this->{extension}, $current_try );
-        unless ( defined($res) ) {
+
+        my $result = $this->_get_dial_route( $this->{extension}, $current_try );
+        unless ( defined($result) ) {
             $this->log( "warning",
                 "SOMETHING WRONG. _get_dial_route returns undefined value." );
             die "SOMETHING WRONG!  _get_dial_route returns undefined value.";
         }
-		$this->speak ("EXEC DIAL SIP/$res"); 	
+
+        my $dst_str  = $result->{'dst_str'};
+        my $dst_type = $result->{'dst_type'};
+        $current_try = $result->{'try'};
+
+		if ($dst_type ne 'tgrp') { 
+			$this->speak("EXEC DIAL SIP/$dst_str/$extension");
+			next; 
+		}
+
+        if ( $dst_type eq 'tgrp' ) {
+            unless ( defined($tgrp_first) ) {
+                $tgrp_first = $dst_str;
+				$this->speak("EXEC DIAL SIP/$dst_str/$extension");
+                next;
+            }
+			if ( $dst_str eq $tgrp_first ) {
+            	$current_try = $current_try + 1;
+				next;
+       	 	}
+			$this->speak("EXEC DIAL SIP/$dst_str/$extension");
+		}
     }
 
     # dial

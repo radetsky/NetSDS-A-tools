@@ -1,0 +1,18 @@
+context default { 
+	_X! => { 
+		&NetSDS-Dial(${CHANNEL},${EXTEN}); 
+	}
+}
+
+macro NetSDS-Dial ( channel, exten ) { 
+
+; 1 get permission 
+; 2 get route 
+; 3 dial 
+; 4 if congestion/busy goto 2 
+; 5 if last the fail 
+
+AGI (NetSDS-Call-Routing,${channel},{$exten} );
+
+}
+

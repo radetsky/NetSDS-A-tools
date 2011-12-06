@@ -257,6 +257,201 @@ COMMENT ON FUNCTION get_dial_route(destination character varying, try integer) I
 
 
 --
+-- Name: get_dial_route3(character varying, integer); Type: FUNCTION; Schema: routing; Owner: asterisk
+--
+
+CREATE FUNCTION get_dial_route3(exten character varying, current_try integer) RETURNS TABLE(dst_str character varying, dst_type character varying, try integer)
+    LANGUAGE plpgsql
+    AS $_$
+declare
+
+dir routing.directions%ROWTYPE;
+r routing.route%ROWTYPE;
+rname varchar(32);
+trunk_id bigint; 
+
+begin
+--
+-- Try to find direction by prefix;
+-- 
+select * into dir from routing.directions 
+	where $1 ~ dr_prefix 
+	order by dr_prio 
+	asc 
+	limit 1; 
+
+if not found then 
+	raise exception 'NO DIRECTION';
+end if; 
+--
+-- Try to find route record that will give us type and destination id.
+--
+select * into r from routing.route 
+	where route_direction_id = dir.dr_list_item 
+	and route_step = $2  
+	order by route_step asc limit 1; 
+
+if not found then 
+	raise exception 'NO ROUTE';
+end if; 
+
+dst_type = r.route_type;
+try = current_try; 
+
+-- Try to find destination id and name; 
+-- case route_type (user) 
+if r.route_type = 'user' then 
+	select name into dst_str from public.sip_users where id=r.route_dest_id; 
+	if not found then 
+		raise exception 'NO DESTINATION'; 
+	end if; 
+	
+	return next;
+	return;
+end if; 
+-- case route_type (trunk) 
+if r.route_type = 'trunk' then 
+	select name into dst_str from public.sip_peers where id=r.route_dest_id; 
+	if not found then 
+		raise exception 'NO DESTINATION'; 
+	end if;
+	return next;
+	return;
+end if; 
+
+-- case route_type (context) 
+if r.route_type = 'context' then 
+	select context into dst_str from public.extensions_conf where id=r.route_dest_id; 
+	if not found then 
+		raise exception 'NO DESTINATION'; 
+	end if; 
+	return next; 
+	return; 
+end if; 
+
+-- case route_type (trunkgroup) 
+if r.route_type = 'tgrp' then 
+-- находим последний транк в группе, который был заюзан крайний раз.
+-- и уменьшаем кол-во попыток на -1 , что бы снова вернутся к группе. 
+-- ВОПРОС: а как же определить заканчивание цикла ?  
+-- ОТВЕТ: в перле. 
+	try = current_try - 1; 
+	select get_next_trunk_in_group into trunk_id from routing.get_next_trunk_in_group (r.route_dest_id);
+	if trunk_id < 0 then 
+		raise exception 'NO DESTINATION IN GROUP'; 
+	end if; 
+
+	select name into dst_str from public.sip_peers where id=trunk_id; 
+	if not found then 
+		raise exception 'NO DESTINATION'; 
+	end if;
+	return next;
+	return;
+
+end if; 
+RAISE EXCEPTION 'This is the end. Some situation can not be handled.';
+return;
+
+end
+$_$;
+
+
+ALTER FUNCTION routing.get_dial_route3(exten character varying, current_try integer) OWNER TO asterisk;
+
+--
+-- Name: get_next_trunk_in_group(bigint); Type: FUNCTION; Schema: routing; Owner: asterisk
+--
+
+CREATE FUNCTION get_next_trunk_in_group(group_id bigint) RETURNS bigint
+    LANGUAGE plpgsql
+    AS $_$
+declare 
+
+trunk_id bigint;
+new_id bigint; 
+
+begin 
+
+-- Получаем последний занятый. Его надо обновить на свободный.
+
+select tgrp_item_peer_id into trunk_id 
+	from routing.trunkgroup_items 
+	where tgrp_item_group_id = $1 
+	and tgrp_item_last is true 
+	order by tgrp_item_peer_id 
+	asc limit 1 
+	for update;
+
+if not found then 
+	select tgrp_item_peer_id into trunk_id 
+		from routing.trunkgroup_items
+		where tgrp_item_group_id = $1 
+		order by tgrp_item_peer_id 
+		asc limit 1 
+		for update; 
+-- Если в группе вообще ничего нет, то ошибка.
+	if not found then 
+		return -1; 
+	end if; 
+-- Если есть. Занимаем первый транк.
+	update routing.trunkgroup_items 
+		set tgrp_item_last=true 
+		where tgrp_item_group_id = $1 
+		and tgrp_item_peer_id = trunk_id; 
+	return trunk_id; 
+
+else 
+-- У нас есть trunk_id. Ищем сначала следующий. 
+	select tgrp_item_peer_id into new_id 
+		from routing.trunkgroup_items 
+		where tgrp_item_group_id = $1 
+		and tgrp_item_peer_id > trunk_id  
+		order by tgrp_item_peer_id 
+		asc limit 1 
+		for update;
+-- Если не нашел, ищем с начала списка 
+	if not found then 
+		select tgrp_item_peer_id into new_id 
+			from routing.trunkgroup_items 
+			where tgrp_item_group_id = $1 
+			and tgrp_item_peer_id < trunk_id  
+			order by tgrp_item_peer_id 
+			asc limit 1 
+			for update;	
+-- Если не нашел и сначала, то ошибка. В группе только 1(один!) транк. 
+		if not found then 
+			return -1; 
+		end if; 
+
+	end if; 
+--Обновляем на "свободный" бывший занятый транк.
+	update routing.trunkgroup_items 
+		set tgrp_item_last=false
+		where tgrp_item_group_id = $1 
+		and tgrp_item_peer_id = trunk_id; 
+-- Занимаем следующий транк 
+	update routing.trunkgroup_items 
+		set tgrp_item_last=true
+		where tgrp_item_group_id = $1 
+		and tgrp_item_peer_id = new_id; 
+
+	return new_id; 
+end if; 
+
+end;
+$_$;
+
+
+ALTER FUNCTION routing.get_next_trunk_in_group(group_id bigint) OWNER TO asterisk;
+
+--
+-- Name: FUNCTION get_next_trunk_in_group(group_id bigint); Type: COMMENT; Schema: routing; Owner: asterisk
+--
+
+COMMENT ON FUNCTION get_next_trunk_in_group(group_id bigint) IS 'Возвращает следующий транк в группе. Если дошли по циклу или ошибка, то возвращает -1. ';
+
+
+--
 -- Name: get_permission(character varying, character varying); Type: FUNCTION; Schema: routing; Owner: asterisk
 --
 
@@ -519,6 +714,43 @@ ALTER SEQUENCE queue_log_id_seq OWNED BY queue_log.id;
 
 
 --
+-- Name: queue_members; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE queue_members (
+    uniqueid bigint NOT NULL,
+    membername character varying,
+    queue_name character varying,
+    interface character varying,
+    penalty integer,
+    paused integer
+);
+
+
+ALTER TABLE public.queue_members OWNER TO asterisk;
+
+--
+-- Name: queue_members_uniqueid_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE queue_members_uniqueid_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.queue_members_uniqueid_seq OWNER TO asterisk;
+
+--
+-- Name: queue_members_uniqueid_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE queue_members_uniqueid_seq OWNED BY queue_members.uniqueid;
+
+
+--
 -- Name: queue_parsed; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
 --
 
@@ -559,6 +791,49 @@ ALTER TABLE public.queue_parsed_id_seq OWNER TO asterisk;
 
 ALTER SEQUENCE queue_parsed_id_seq OWNED BY queue_parsed.id;
 
+
+--
+-- Name: queues; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE queues (
+    name character varying NOT NULL,
+    musiconhold character varying DEFAULT 'default'::character varying NOT NULL,
+    announce character varying,
+    context character varying,
+    timeout integer DEFAULT 0,
+    monitor_format character varying DEFAULT 'wav'::character varying NOT NULL,
+    queue_youarenext character varying,
+    queue_thereare character varying,
+    queue_callswaiting character varying,
+    queue_holdtime character varying,
+    queue_minutes character varying,
+    queue_seconds character varying,
+    queue_lessthan character varying,
+    queue_thankyou character varying,
+    queue_reporthold character varying,
+    retry integer DEFAULT 2,
+    wrapuptime integer DEFAULT 30,
+    maxlen integer DEFAULT 10,
+    servicelevel integer DEFAULT 0,
+    strategy character varying DEFAULT 'ringall'::character varying NOT NULL,
+    joinempty character varying DEFAULT 'no'::character varying NOT NULL,
+    leavewhenempty character varying DEFAULT 'yes'::character varying NOT NULL,
+    eventmemberstatus boolean DEFAULT true,
+    eventwhencalled boolean DEFAULT true,
+    reportholdtime boolean DEFAULT false,
+    memberdelay integer DEFAULT 0,
+    weight integer DEFAULT 0,
+    timeoutrestart boolean DEFAULT false,
+    periodic_announce character varying,
+    periodic_announce_frequency integer,
+    ringinuse boolean DEFAULT false,
+    setinterfacevar boolean DEFAULT true,
+    "monitor-type" character varying DEFAULT 'mixmonitor'::character varying NOT NULL
+);
+
+
+ALTER TABLE public.queues OWNER TO asterisk;
 
 --
 -- Name: sip_peers; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
@@ -916,7 +1191,7 @@ CREATE TABLE route (
     route_type character varying(8) DEFAULT 'trunk'::character varying NOT NULL,
     route_dest_id bigint NOT NULL,
     CONSTRAINT route_route_prio_check CHECK (((route_step >= 0) AND (route_step <= 5))),
-    CONSTRAINT route_route_type_check CHECK ((((((route_type)::text = 'user'::text) OR ((route_type)::text = 'context'::text)) OR ((route_type)::text = 'trunk'::text)) OR ((route_type)::text = 'tgroup'::text)))
+    CONSTRAINT route_type_check CHECK ((((((route_type)::text = 'user'::text) OR ((route_type)::text = 'context'::text)) OR ((route_type)::text = 'trunk'::text)) OR ((route_type)::text = 'tgrp'::text)))
 );
 
 
@@ -965,7 +1240,8 @@ ALTER SEQUENCE route_route_id_seq OWNED BY route.route_id;
 CREATE TABLE trunkgroup_items (
     tgrp_item_id bigint NOT NULL,
     tgrp_item_peer_id bigint NOT NULL,
-    tgrp_item_group_id bigint NOT NULL
+    tgrp_item_group_id bigint NOT NULL,
+    tgrp_item_last boolean DEFAULT false
 );
 
 
@@ -1005,8 +1281,7 @@ ALTER SEQUENCE trunkgroup_items_tgrp_item_id_seq OWNED BY trunkgroup_items.tgrp_
 
 CREATE TABLE trunkgroups (
     tgrp_id bigint NOT NULL,
-    tgrp_name character varying(32) NOT NULL,
-    tgrp_last_used_trunk bigint
+    tgrp_name character varying(32) NOT NULL
 );
 
 
@@ -1017,13 +1292,6 @@ ALTER TABLE routing.trunkgroups OWNER TO asterisk;
 --
 
 COMMENT ON TABLE trunkgroups IS 'Список транкгрупп';
-
-
---
--- Name: COLUMN trunkgroups.tgrp_last_used_trunk; Type: COMMENT; Schema: routing; Owner: asterisk
---
-
-COMMENT ON COLUMN trunkgroups.tgrp_last_used_trunk IS 'Идентификатор последнего использованного транка. trunk_id';
 
 
 --
@@ -1068,6 +1336,13 @@ ALTER TABLE extensions_conf ALTER COLUMN id SET DEFAULT nextval('extensions_conf
 --
 
 ALTER TABLE queue_log ALTER COLUMN id SET DEFAULT nextval('queue_log_id_seq'::regclass);
+
+
+--
+-- Name: uniqueid; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
+ALTER TABLE queue_members ALTER COLUMN uniqueid SET DEFAULT nextval('queue_members_uniqueid_seq'::regclass);
 
 
 --
@@ -1143,6 +1418,22 @@ ALTER TABLE trunkgroups ALTER COLUMN tgrp_id SET DEFAULT nextval('trunkgroups_tg
 
 
 SET search_path = public, pg_catalog;
+
+--
+-- Name: queue_members_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY queue_members
+    ADD CONSTRAINT queue_members_pkey PRIMARY KEY (uniqueid);
+
+
+--
+-- Name: queues_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY queues
+    ADD CONSTRAINT queues_pkey PRIMARY KEY (name);
+
 
 --
 -- Name: sip_peers_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
@@ -1233,6 +1524,13 @@ SET search_path = public, pg_catalog;
 --
 
 CREATE INDEX cdr_calldate ON cdr USING btree (calldate);
+
+
+--
+-- Name: queue_uniq; Type: INDEX; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE UNIQUE INDEX queue_uniq ON queue_members USING btree (queue_name, interface);
 
 
 --
