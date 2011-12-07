@@ -836,6 +836,45 @@ CREATE TABLE queues (
 ALTER TABLE public.queues OWNER TO asterisk;
 
 --
+-- Name: sip_conf; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE sip_conf (
+    id bigint NOT NULL,
+    cat_metric integer DEFAULT 0 NOT NULL,
+    var_metric integer DEFAULT 0 NOT NULL,
+    commented integer DEFAULT 0 NOT NULL,
+    filename character varying DEFAULT ''::character varying NOT NULL,
+    category character varying DEFAULT 'default'::character varying NOT NULL,
+    var_name character varying DEFAULT ''::character varying NOT NULL,
+    var_val character varying DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE public.sip_conf OWNER TO asterisk;
+
+--
+-- Name: sip_conf_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE sip_conf_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.sip_conf_id_seq OWNER TO asterisk;
+
+--
+-- Name: sip_conf_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE sip_conf_id_seq OWNED BY sip_conf.id;
+
+
+--
 -- Name: sip_peers; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
 --
 
@@ -854,7 +893,7 @@ CREATE TABLE sip_peers (
     fromuser character varying(80),
     fromdomain character varying(80),
     host character varying(31) DEFAULT 'dynamic'::character varying NOT NULL,
-    insecure character varying(4),
+    insecure character varying,
     language character varying(2),
     mailbox character varying(50),
     md5secret character varying(80),
@@ -1356,6 +1395,13 @@ ALTER TABLE queue_parsed ALTER COLUMN id SET DEFAULT nextval('queue_parsed_id_se
 -- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
 --
 
+ALTER TABLE sip_conf ALTER COLUMN id SET DEFAULT nextval('sip_conf_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
 ALTER TABLE sip_peers ALTER COLUMN id SET DEFAULT nextval('sip_peers_id_seq'::regclass);
 
 
@@ -1433,6 +1479,14 @@ ALTER TABLE ONLY queue_members
 
 ALTER TABLE ONLY queues
     ADD CONSTRAINT queues_pkey PRIMARY KEY (name);
+
+
+--
+-- Name: sip_conf_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY sip_conf
+    ADD CONSTRAINT sip_conf_pkey PRIMARY KEY (id);
 
 
 --
