@@ -37,6 +37,8 @@ package Router;
 
 use base 'NetSDS::App';
 use Data::Dumper;
+use Asterisk::AGI; 
+
 
 sub start {
     my $this = shift;
@@ -53,6 +55,9 @@ sub start {
     }
 
     $this->mk_accessors('dbh');
+	$this->mk_accessors('agi'); 
+
+	$this->agi(new Asterisk::AGI); 
 
 }
 
@@ -115,7 +120,7 @@ sub _db_connect {
     }
 
     if ( $this->{verbose} ) {
-        $this->speak("Database connected.");
+        $this->agi->verbose("Database connected.",3);
     }
     return 1;
 }
@@ -130,23 +135,24 @@ sub _get_permissions {
 
     eval { my $rv = $sth->execute( $peername, $exten ); };
     if ($@) {
-
-        # raised exception
+		# raised exception
         $this->log( "warning", $this->dbh->errstr );
-        $this->speak( $this->dbh->errstr );
+        $this->agi->verbose( $this->dbh->errstr , 3 );
+		$this->agi->exec("Hangup","17");
         exit(-1);
     }
     my $result = $sth->fetchrow_hashref;
     my $perm   = $result->{'get_permission'};
     if ( $perm > 0 ) {
-        $this->speak("$peername has rights to $exten");
-        $this->log( "info", "$peername hash right to $exten" );
+        $this->agi->verbose("$peername has permissions to $exten",3);
+        $this->log( "info", "$peername has permissions to $exten" );
     }
     else {
-        $this->speak("$peername does not have the rights to $exten !");
+        $this->agi->verbose("$peername does not have the rights to $exten !",3);
         $this->log( "warning",
             "$peername does not have the rights to $exten !" );
         $this->dbh->rollback();
+		$this->agi->exec("Hangup","17");
         exit(-1);
     }
 
@@ -166,7 +172,8 @@ sub _get_dial_route {
     eval { my $rv = $sth->execute( $exten, $try ); };
     if ($@) {
         $this->log( "warning", $this->dbh->errstr );
-        $this->speak( $this->dbh->errstr );
+        $this->agi->verbose( $this->dbh->errstr,3 );
+		$this->agi->exec("Hangup","17");
         exit(-1);
     }
     my $result = $sth->fetchrow_hashref;
@@ -205,29 +212,51 @@ sub process {
         unless ( defined($result) ) {
             $this->log( "warning",
                 "SOMETHING WRONG. _get_dial_route returns undefined value." );
+			$this->agi->verbose("SOMETHING WRONG!  _get_dial_route returns undefined value.",3); 
             die "SOMETHING WRONG!  _get_dial_route returns undefined value.";
         }
 
         my $dst_str  = $result->{'dst_str'};
         my $dst_type = $result->{'dst_type'};
         $current_try = $result->{'try'};
+		$this->agi->verbose("dst_str=$dst_str,dst_type=$dst_type,try=$current_try",3);
+		my $res = undef; 
 
-		if ($dst_type ne 'tgrp') { 
-			$this->speak("EXEC DIAL SIP/$dst_str/$extension");
-			next; 
+		if ($dst_type eq "user") { 
+			$this->agi->verbose("Dial SIP/$dst_str",3);
+			$res = $this->agi->exec("Dial","SIP/$dst_str|120|rtT");
+			$this->agi->verbose(Dumper($res),3); 
+            $this->agi->verbose("DIALSTATUS=".$this->agi->get_variable("DIALSTATUS"),3);
+		}
+		if ($dst_type eq "peer") { 
+			$this->agi->verbose("Dial SIP/$dst_str/$extension",3);
+			$res = $this->agi->exec("Dial","SIP/$dst_str/$extension|120|rtT");
+			$this->agi->verbose(Dumper($res),3);
+			$this->agi->verbose("DIALSTATUS=".$this->agi->get_variable("DIALSTATUS"),3); 
+		}
+
+		if ($dst_type eq 'context') { 
+			$this->agi->verbose("Goto context $dst_str/$extension");
+			$res = $this->agi->exec("Goto","$dst_str|$extension|1");
+			exit(0); 
 		}
 
         if ( $dst_type eq 'tgrp' ) {
             unless ( defined($tgrp_first) ) {
                 $tgrp_first = $dst_str;
-				$this->speak("EXEC DIAL SIP/$dst_str/$extension");
-                next;
+				$this->agi->verbose("EXEC DIAL SIP/$dst_str/$extension");
+				$res = $this->agi->exec("Dial","SIP/$dst_str/$extension|120|rtT");
+                $this->agi->verbose(Dumper($res),3);
+            	$this->agi->verbose("DIALSTATUS=".$this->agi->get_variable("DIALSTATUS"),3);
+				next;
             }
 			if ( $dst_str eq $tgrp_first ) {
             	$current_try = $current_try + 1;
 				next;
        	 	}
-			$this->speak("EXEC DIAL SIP/$dst_str/$extension");
+			$res = $this->agi->exec("Dial","SIP/$dst_str/$extension|120|rtT");
+			$this->agi->verbose(Dumper($res),3);
+            $this->agi->verbose("DIALSTATUS=".$this->agi->get_variable("DIALSTATUS"),3);
 		}
     }
 

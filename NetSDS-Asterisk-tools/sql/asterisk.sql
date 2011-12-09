@@ -301,7 +301,7 @@ try = current_try;
 -- Try to find destination id and name; 
 -- case route_type (user) 
 if r.route_type = 'user' then 
-	select name into dst_str from public.sip_users where id=r.route_dest_id; 
+	select name into dst_str from public.sip_peers where id=r.route_dest_id; 
 	if not found then 
 		raise exception 'NO DESTINATION'; 
 	end if; 
@@ -461,23 +461,17 @@ CREATE FUNCTION get_permission(peer_name character varying, number_b character v
 declare 
 
 UID bigint;
-u_type varchar(4);
 DIR_ID bigint; 
 
 begin
 
 --
--- we getting UID and type (user,peer)
+-- we getting UID 
 --
 
-u_type = 'peer'; 
 select id from public.sip_peers where name=$1 into UID;
 if not found then 
-    u_type = 'user';
-    select id from public.sip_users where name=$1 into UID; 
-    if not found then
 	raise exception 'NO SOURCE PEER/USER BY CHANNEL';
-    end if;
 end if; 
 
 --
@@ -498,9 +492,8 @@ end if;
 
 perform id from routing.permissions 
 	where direction_id=DIR_ID 
-	and peer_id=UID 
-	and peer_type=u_type; 
-
+	and peer_id=UID;
+	
 if not found then 
 	return false; 
 end if; 
@@ -511,6 +504,7 @@ end;
 
 --
 -- Функция завершена 30.11.11
+-- Модификация 09.12.11 (убрали u_type и проверку по типу прав peer/user)
 --
 $_$;
 
@@ -547,13 +541,13 @@ if NEW.route_type = 'trunk' then
 	end if;
 end if;  
 if NEW.route_type = 'user' then 
-	perform  id from public.sip_users where id=NEW.route_dest_id; 
+	perform  id from public.sip_peers where id=NEW.route_dest_id; 
 	if not found then 
 		raise exception 'sip user not found with same id';
 	end if; 
 end if;
 if NEW.route_type = 'context' then 
-	perform id from public.extensions where id=NEW.route_dest_id; 
+	perform id from public.extensions_conf where id=NEW.route_dest_id; 
 	if not found then 
 		raise exception 'context not found'; 
 	end if ; 
@@ -951,82 +945,6 @@ ALTER SEQUENCE sip_peers_id_seq OWNED BY sip_peers.id;
 
 
 --
--- Name: sip_users; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
---
-
-CREATE TABLE sip_users (
-    id bigint NOT NULL,
-    name character varying(80) DEFAULT ''::character varying NOT NULL,
-    accountcode character varying(20),
-    amaflags character varying(7),
-    callgroup character varying(10),
-    callerid character varying(80),
-    canreinvite character varying(3) DEFAULT 'no'::character varying,
-    directmedia character varying(3) DEFAULT 'yes'::character varying,
-    context character varying(80) DEFAULT 'default'::character varying,
-    defaultip character varying(15),
-    dtmfmode character varying(7) DEFAULT 'rfc2833'::character varying,
-    fromuser character varying(80),
-    fromdomain character varying(80),
-    host character varying(31) DEFAULT 'dynamic'::character varying NOT NULL,
-    insecure character varying(4),
-    language character varying(2),
-    mailbox character varying(50),
-    md5secret character varying(80),
-    nat character varying(5) DEFAULT 'no'::character varying NOT NULL,
-    permit character varying(95),
-    deny character varying(95),
-    mask character varying(95),
-    pickupgroup character varying(10),
-    port character varying(5) DEFAULT ''::character varying NOT NULL,
-    qualify character varying(3) DEFAULT 'yes'::character varying,
-    restrictcid character varying(1),
-    rtptimeout character varying(3),
-    rtpholdtimeout character varying(3),
-    secret character varying(80),
-    type character varying DEFAULT 'friend'::character varying NOT NULL,
-    username character varying(80) DEFAULT ''::character varying NOT NULL,
-    disallow character varying(100) DEFAULT 'all'::character varying,
-    allow character varying(100) DEFAULT 'ulaw,alaw'::character varying,
-    musiconhold character varying(100),
-    regseconds bigint DEFAULT (0)::bigint NOT NULL,
-    ipaddr character varying(15) DEFAULT ''::character varying NOT NULL,
-    regexten character varying(80) DEFAULT ''::character varying NOT NULL,
-    cancallforward character varying(3) DEFAULT 'yes'::character varying,
-    comment character varying(80) DEFAULT ''::character varying,
-    "call-limit" smallint DEFAULT 1,
-    lastms integer DEFAULT 0,
-    regserver character varying(100) DEFAULT NULL::character varying,
-    fullcontact character varying(80) DEFAULT NULL::character varying,
-    useragent character varying(20) DEFAULT NULL::character varying,
-    defaultuser character varying(10) DEFAULT NULL::character varying
-);
-
-
-ALTER TABLE public.sip_users OWNER TO asterisk;
-
---
--- Name: sip_users_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
---
-
-CREATE SEQUENCE sip_users_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.sip_users_id_seq OWNER TO asterisk;
-
---
--- Name: sip_users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
---
-
-ALTER SEQUENCE sip_users_id_seq OWNED BY sip_users.id;
-
-
---
 -- Name: whitelist; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
 --
 
@@ -1409,13 +1327,6 @@ ALTER TABLE sip_peers ALTER COLUMN id SET DEFAULT nextval('sip_peers_id_seq'::re
 -- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
 --
 
-ALTER TABLE sip_users ALTER COLUMN id SET DEFAULT nextval('sip_users_id_seq'::regclass);
-
-
---
--- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
---
-
 ALTER TABLE whitelist ALTER COLUMN id SET DEFAULT nextval('whitelist_id_seq'::regclass);
 
 
@@ -1466,6 +1377,14 @@ ALTER TABLE trunkgroups ALTER COLUMN tgrp_id SET DEFAULT nextval('trunkgroups_tg
 SET search_path = public, pg_catalog;
 
 --
+-- Name: extensions_conf_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY extensions_conf
+    ADD CONSTRAINT extensions_conf_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: queue_members_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
 --
 
@@ -1495,14 +1414,6 @@ ALTER TABLE ONLY sip_conf
 
 ALTER TABLE ONLY sip_peers
     ADD CONSTRAINT sip_peers_pkey PRIMARY KEY (id);
-
-
---
--- Name: sip_users_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
---
-
-ALTER TABLE ONLY sip_users
-    ADD CONSTRAINT sip_users_pkey PRIMARY KEY (id);
 
 
 SET search_path = routing, pg_catalog;
@@ -1592,13 +1503,6 @@ CREATE UNIQUE INDEX queue_uniq ON queue_members USING btree (queue_name, interfa
 --
 
 CREATE UNIQUE INDEX sip_peers_name ON sip_peers USING btree (name);
-
-
---
--- Name: sip_users_name; Type: INDEX; Schema: public; Owner: asterisk; Tablespace: 
---
-
-CREATE UNIQUE INDEX sip_users_name ON sip_users USING btree (name);
 
 
 SET search_path = routing, pg_catalog;
