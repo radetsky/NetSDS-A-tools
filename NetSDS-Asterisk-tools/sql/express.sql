@@ -16,6 +16,7 @@ ALTER TABLE ONLY routing.trunkgroup_items DROP CONSTRAINT tgrp_item_fk;
 ALTER TABLE ONLY routing.route DROP CONSTRAINT route_route_direction_id_fkey;
 ALTER TABLE ONLY routing.permissions DROP CONSTRAINT fk_direction_in_dlist;
 ALTER TABLE ONLY routing.directions DROP CONSTRAINT dr_name;
+ALTER TABLE ONLY routing.callerid DROP CONSTRAINT callerid_direction_id_fkey;
 DROP TRIGGER route_check_dest_id ON routing.route;
 DROP INDEX routing.fki_tgrp_item_group;
 DROP INDEX routing.fki_tgrp_item_fk;
@@ -34,6 +35,7 @@ ALTER TABLE ONLY routing.trunkgroups DROP CONSTRAINT tgrp_name_uniq;
 ALTER TABLE ONLY routing.route DROP CONSTRAINT route_pkey;
 ALTER TABLE ONLY routing.permissions DROP CONSTRAINT permissions_pkey;
 ALTER TABLE ONLY routing.directions DROP CONSTRAINT dr_pk;
+ALTER TABLE ONLY routing.callerid DROP CONSTRAINT callerid_pkey;
 ALTER TABLE ONLY routing.directions_list DROP CONSTRAINT "DLIST_UNIQ_NAME";
 ALTER TABLE ONLY routing.directions_list DROP CONSTRAINT "DLIST_PK";
 SET search_path = public, pg_catalog;
@@ -55,6 +57,7 @@ ALTER TABLE routing.route ALTER COLUMN route_id DROP DEFAULT;
 ALTER TABLE routing.permissions ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE routing.directions_list ALTER COLUMN dlist_id DROP DEFAULT;
 ALTER TABLE routing.directions ALTER COLUMN dr_id DROP DEFAULT;
+ALTER TABLE routing.callerid ALTER COLUMN id DROP DEFAULT;
 SET search_path = public, pg_catalog;
 
 ALTER TABLE public.whitelist ALTER COLUMN id DROP DEFAULT;
@@ -79,6 +82,8 @@ DROP SEQUENCE routing."directions_list_DLIST_ID_seq";
 DROP TABLE routing.directions_list;
 DROP SEQUENCE routing.directions_dr_id_seq;
 DROP TABLE routing.directions;
+DROP SEQUENCE routing.callerid_id_seq;
+DROP TABLE routing.callerid;
 SET search_path = public, pg_catalog;
 
 DROP SEQUENCE public.whitelist_id_seq;
@@ -106,6 +111,7 @@ DROP FUNCTION routing.get_permission(peer_name character varying, number_b chara
 DROP FUNCTION routing.get_next_trunk_in_group(group_id bigint);
 DROP FUNCTION routing.get_dial_route3(exten character varying, current_try integer);
 DROP FUNCTION routing.get_dial_route(destination character varying, try integer);
+DROP FUNCTION routing.get_callerid(peer_name character varying, number_b character varying);
 SET search_path = public, pg_catalog;
 
 DROP FUNCTION public.uuid_ns_x500();
@@ -288,6 +294,71 @@ CREATE FUNCTION uuid_ns_x500() RETURNS uuid
 ALTER FUNCTION public.uuid_ns_x500() OWNER TO postgres;
 
 SET search_path = routing, pg_catalog;
+
+--
+-- Name: get_callerid(character varying, character varying); Type: FUNCTION; Schema: routing; Owner: asterisk
+--
+
+CREATE FUNCTION get_callerid(peer_name character varying, number_b character varying) RETURNS character varying
+    LANGUAGE plpgsql
+    AS $_$
+declare
+
+UID bigint;
+DIR_ID bigint; 
+CALLER_ID character varying; 
+
+begin
+
+select id from public.sip_peers where name=$1 into UID;
+if not found then 
+	raise exception 'NO SOURCE PEER/USER BY CHANNEL';
+end if; 
+
+--
+-- gettting direction_id by number_b
+-- 
+
+select dr_list_item into DIR_ID from routing.directions 
+	where $2 ~ dr_prefix 
+	order by dr_prio 
+	asc 
+	limit 1; 
+
+if not found then 
+	raise exception 'NO DESTINATION BY NUMBER_B'; 
+end if; 
+
+--
+-- get caller id
+--
+select set_callerid into CALLER_ID from routing.callerid 
+	where direction_id = DIR_ID and sip_id = UID;
+if not found then
+	select set_callerid into CALLER_ID from routing.callerid 
+		where direction_id = DIR_ID and sip_id is NULL; 
+	if not found then 
+		return '';
+	end if; 
+end if; 
+
+return CALLER_ID;
+
+end;
+
+
+$_$;
+
+
+ALTER FUNCTION routing.get_callerid(peer_name character varying, number_b character varying) OWNER TO asterisk;
+
+--
+-- Name: FUNCTION get_callerid(peer_name character varying, number_b character varying); Type: COMMENT; Schema: routing; Owner: asterisk
+--
+
+COMMENT ON FUNCTION get_callerid(peer_name character varying, number_b character varying) IS 'Находим и подставляем callerid. 
+';
+
 
 --
 -- Name: get_dial_route(character varying, integer); Type: FUNCTION; Schema: routing; Owner: asterisk
@@ -1150,6 +1221,61 @@ SELECT pg_catalog.setval('whitelist_id_seq', 1, false);
 SET search_path = routing, pg_catalog;
 
 --
+-- Name: callerid; Type: TABLE; Schema: routing; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE callerid (
+    id bigint NOT NULL,
+    direction_id bigint NOT NULL,
+    sip_id bigint,
+    set_callerid character varying DEFAULT ''::character varying NOT NULL
+);
+
+
+ALTER TABLE routing.callerid OWNER TO asterisk;
+
+--
+-- Name: TABLE callerid; Type: COMMENT; Schema: routing; Owner: asterisk
+--
+
+COMMENT ON TABLE callerid IS 'Таблица подстановок CALLERID. 
+Пример: 
+По направлению  DR_ID, юзер/пир SIP_PEER_ID требует установки CALLERID = XXXX. 
+Если правило найдено, то CALLERID устанавливаем, а если не найдено, то не трогаем вообще. 
+
+Если SIP_ID is NULL, то устанавливаем правило несмотря на того, кто звонит. Очень удобно для корпоративов. Если нужно подставить значение, которое общее для всех. Все равно сначала ищем "для конкретного человека", а потом "для всего кагала". 
+';
+
+
+--
+-- Name: callerid_id_seq; Type: SEQUENCE; Schema: routing; Owner: asterisk
+--
+
+CREATE SEQUENCE callerid_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE routing.callerid_id_seq OWNER TO asterisk;
+
+--
+-- Name: callerid_id_seq; Type: SEQUENCE OWNED BY; Schema: routing; Owner: asterisk
+--
+
+ALTER SEQUENCE callerid_id_seq OWNED BY callerid.id;
+
+
+--
+-- Name: callerid_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
+--
+
+SELECT pg_catalog.setval('callerid_id_seq', 3, true);
+
+
+--
 -- Name: directions; Type: TABLE; Schema: routing; Owner: asterisk; Tablespace: 
 --
 
@@ -1543,6 +1669,13 @@ ALTER TABLE whitelist ALTER COLUMN id SET DEFAULT nextval('whitelist_id_seq'::re
 SET search_path = routing, pg_catalog;
 
 --
+-- Name: id; Type: DEFAULT; Schema: routing; Owner: asterisk
+--
+
+ALTER TABLE callerid ALTER COLUMN id SET DEFAULT nextval('callerid_id_seq'::regclass);
+
+
+--
 -- Name: dr_id; Type: DEFAULT; Schema: routing; Owner: asterisk
 --
 
@@ -1681,7 +1814,7 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 4	gsm3	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 58	202	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N
-57	201	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N	0	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1323708332	0.0.0.0		yes		1	68		sip:201@192.168.1.114:5060	\N	\N
+57	201	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1323729061	192.168.1.114		yes		1	8		sip:201@192.168.1.114:5060	\N	\N
 \.
 
 
@@ -1694,6 +1827,16 @@ COPY whitelist (id, number, reason, create_date) FROM stdin;
 
 
 SET search_path = routing, pg_catalog;
+
+--
+-- Data for Name: callerid; Type: TABLE DATA; Schema: routing; Owner: asterisk
+--
+
+COPY callerid (id, direction_id, sip_id, set_callerid) FROM stdin;
+1	1	57	3039338
+3	1	\N	5949641
+\.
+
 
 --
 -- Data for Name: directions; Type: TABLE DATA; Schema: routing; Owner: asterisk
@@ -1716,10 +1859,10 @@ COPY directions (dr_id, dr_list_item, dr_prefix, dr_prio) FROM stdin;
 --
 
 COPY directions_list (dlist_id, dlist_name) FROM stdin;
-1	Офис Нет Стайл
-2	Киевстар
 3	Dmitry Kruglikoff
 4	taxi express
+1	NetStyle Office
+2	KyivStar
 \.
 
 
@@ -1831,6 +1974,14 @@ ALTER TABLE ONLY directions_list
 
 
 --
+-- Name: callerid_pkey; Type: CONSTRAINT; Schema: routing; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY callerid
+    ADD CONSTRAINT callerid_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: dr_pk; Type: CONSTRAINT; Schema: routing; Owner: asterisk; Tablespace: 
 --
 
@@ -1936,6 +2087,14 @@ CREATE INDEX fki_tgrp_item_group ON trunkgroup_items USING btree (tgrp_item_grou
 --
 
 CREATE TRIGGER route_check_dest_id BEFORE INSERT OR UPDATE ON route FOR EACH ROW EXECUTE PROCEDURE route_test();
+
+
+--
+-- Name: callerid_direction_id_fkey; Type: FK CONSTRAINT; Schema: routing; Owner: asterisk
+--
+
+ALTER TABLE ONLY callerid
+    ADD CONSTRAINT callerid_direction_id_fkey FOREIGN KEY (direction_id) REFERENCES directions_list(dlist_id);
 
 
 --

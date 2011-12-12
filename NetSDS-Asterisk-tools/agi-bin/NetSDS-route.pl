@@ -165,6 +165,43 @@ sub _get_permissions {
 
 }
 
+
+sub _get_callerid {
+
+    my $this     = shift;
+    my $peername = shift;
+    my $exten    = shift;
+
+    $this->dbh->begin_work or die $this->dbh->errstr;
+    my $sth = $this->dbh->prepare("select * from routing.get_callerid (?,?)");
+
+    eval { my $rv = $sth->execute( $peername, $exten ); };
+    if ($@) {
+
+        # raised exception
+        $this->log( "warning", $this->dbh->errstr );
+        $this->agi->verbose( $this->dbh->errstr, 3 );
+        $this->agi->exec( "Hangup", "17" );
+        exit(-1);
+    }
+    my $result = $sth->fetchrow_hashref;
+    my $callerid   = $result->{'get_callerid'};
+    if ( $callerid ne '' ) {
+        $this->agi->verbose( "$peername have to set CallerID to \'$callerid\' while calling to $exten", 3 );
+        $this->log( "info",  "$peername have to set CallerID to \'$callerid\' while calling to $exten" );
+		$this->agi->exec("Set","CALLERID(num)=$callerid");
+    }
+    else {
+        $this->agi->verbose( "$peername does not change own CallerID",3 );
+        $this->log( "info",
+            "$peername does not change own CallerID" );
+    }
+
+    $this->dbh->commit();
+    return;
+
+}
+
 sub _get_dial_route {
     my $this  = shift;
     my $exten = shift;
@@ -237,6 +274,9 @@ sub process {
 
     # Get permission
     $this->_get_permissions( $this->{peername}, $this->{extension} );
+	
+	# CallerID 
+	$this->_get_callerid ( $this->{peername}, $this->{extension} );
 
     my $tgrp_first;
 
