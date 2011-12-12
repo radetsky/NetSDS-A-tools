@@ -913,7 +913,7 @@ CREATE TABLE sip_peers (
     cancallforward character varying(3) DEFAULT 'yes'::character varying,
     comment character varying(80) DEFAULT ''::character varying,
     "call-limit" smallint DEFAULT 1,
-    lastms integer DEFAULT 0,
+    lastms character varying(5) DEFAULT '0'::character varying,
     regserver character varying(100) DEFAULT NULL::character varying,
     fullcontact character varying(80) DEFAULT NULL::character varying,
     useragent character varying(20) DEFAULT NULL::character varying,

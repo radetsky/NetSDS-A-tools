@@ -9,6 +9,120 @@ SET check_function_bodies = false;
 SET client_min_messages = warning;
 SET escape_string_warning = off;
 
+SET search_path = routing, pg_catalog;
+
+ALTER TABLE ONLY routing.trunkgroup_items DROP CONSTRAINT tgrp_item_group;
+ALTER TABLE ONLY routing.trunkgroup_items DROP CONSTRAINT tgrp_item_fk;
+ALTER TABLE ONLY routing.route DROP CONSTRAINT route_route_direction_id_fkey;
+ALTER TABLE ONLY routing.permissions DROP CONSTRAINT fk_direction_in_dlist;
+ALTER TABLE ONLY routing.directions DROP CONSTRAINT dr_name;
+DROP TRIGGER route_check_dest_id ON routing.route;
+DROP INDEX routing.fki_tgrp_item_group;
+DROP INDEX routing.fki_tgrp_item_fk;
+DROP INDEX routing.fki_dr_name;
+DROP INDEX routing.fki_direction_in_dlist;
+SET search_path = public, pg_catalog;
+
+DROP INDEX public.sip_peers_name;
+DROP INDEX public.queue_uniq;
+DROP INDEX public.cdr_calldate;
+SET search_path = routing, pg_catalog;
+
+ALTER TABLE ONLY routing.trunkgroup_items DROP CONSTRAINT trunkgroup_items_pkey;
+ALTER TABLE ONLY routing.trunkgroups DROP CONSTRAINT tgrp_pkey;
+ALTER TABLE ONLY routing.trunkgroups DROP CONSTRAINT tgrp_name_uniq;
+ALTER TABLE ONLY routing.route DROP CONSTRAINT route_pkey;
+ALTER TABLE ONLY routing.permissions DROP CONSTRAINT permissions_pkey;
+ALTER TABLE ONLY routing.directions DROP CONSTRAINT dr_pk;
+ALTER TABLE ONLY routing.directions_list DROP CONSTRAINT "DLIST_UNIQ_NAME";
+ALTER TABLE ONLY routing.directions_list DROP CONSTRAINT "DLIST_PK";
+SET search_path = public, pg_catalog;
+
+ALTER TABLE ONLY public.sip_peers DROP CONSTRAINT sip_peers_pkey;
+ALTER TABLE ONLY public.sip_conf DROP CONSTRAINT sip_conf_pkey;
+ALTER TABLE ONLY public.queues DROP CONSTRAINT queues_pkey;
+ALTER TABLE ONLY public.queue_members DROP CONSTRAINT queue_members_pkey;
+ALTER TABLE ONLY public.extensions_conf DROP CONSTRAINT extensions_conf_pkey;
+SET search_path = routing, pg_catalog;
+
+SET search_path = public, pg_catalog;
+
+SET search_path = routing, pg_catalog;
+
+ALTER TABLE routing.trunkgroups ALTER COLUMN tgrp_id DROP DEFAULT;
+ALTER TABLE routing.trunkgroup_items ALTER COLUMN tgrp_item_id DROP DEFAULT;
+ALTER TABLE routing.route ALTER COLUMN route_id DROP DEFAULT;
+ALTER TABLE routing.permissions ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE routing.directions_list ALTER COLUMN dlist_id DROP DEFAULT;
+ALTER TABLE routing.directions ALTER COLUMN dr_id DROP DEFAULT;
+SET search_path = public, pg_catalog;
+
+ALTER TABLE public.whitelist ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.sip_peers ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.sip_conf ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.queue_parsed ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.queue_members ALTER COLUMN uniqueid DROP DEFAULT;
+ALTER TABLE public.queue_log ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.extensions_conf ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE public.blacklist ALTER COLUMN id DROP DEFAULT;
+SET search_path = routing, pg_catalog;
+
+DROP SEQUENCE routing.trunkgroups_tgrp_id_seq;
+DROP TABLE routing.trunkgroups;
+DROP SEQUENCE routing.trunkgroup_items_tgrp_item_id_seq;
+DROP TABLE routing.trunkgroup_items;
+DROP SEQUENCE routing.route_route_id_seq;
+DROP TABLE routing.route;
+DROP SEQUENCE routing.permissions_id_seq;
+DROP TABLE routing.permissions;
+DROP SEQUENCE routing."directions_list_DLIST_ID_seq";
+DROP TABLE routing.directions_list;
+DROP SEQUENCE routing.directions_dr_id_seq;
+DROP TABLE routing.directions;
+SET search_path = public, pg_catalog;
+
+DROP SEQUENCE public.whitelist_id_seq;
+DROP TABLE public.whitelist;
+DROP SEQUENCE public.sip_peers_id_seq;
+DROP TABLE public.sip_peers;
+DROP SEQUENCE public.sip_conf_id_seq;
+DROP TABLE public.sip_conf;
+DROP TABLE public.queues;
+DROP SEQUENCE public.queue_parsed_id_seq;
+DROP TABLE public.queue_parsed;
+DROP SEQUENCE public.queue_members_uniqueid_seq;
+DROP TABLE public.queue_members;
+DROP SEQUENCE public.queue_log_id_seq;
+DROP TABLE public.queue_log;
+DROP SEQUENCE public.extensions_conf_id_seq;
+DROP TABLE public.extensions_conf;
+DROP TABLE public.cdr;
+DROP SEQUENCE public.blacklist_id_seq;
+DROP TABLE public.blacklist;
+SET search_path = routing, pg_catalog;
+
+DROP FUNCTION routing.route_test();
+DROP FUNCTION routing.get_permission(peer_name character varying, number_b character varying);
+DROP FUNCTION routing.get_next_trunk_in_group(group_id bigint);
+DROP FUNCTION routing.get_dial_route3(exten character varying, current_try integer);
+DROP FUNCTION routing.get_dial_route(destination character varying, try integer);
+SET search_path = public, pg_catalog;
+
+DROP FUNCTION public.uuid_ns_x500();
+DROP FUNCTION public.uuid_ns_url();
+DROP FUNCTION public.uuid_ns_oid();
+DROP FUNCTION public.uuid_ns_dns();
+DROP FUNCTION public.uuid_nil();
+DROP FUNCTION public.uuid_generate_v5(namespace uuid, name text);
+DROP FUNCTION public.uuid_generate_v4();
+DROP FUNCTION public.uuid_generate_v3(namespace uuid, name text);
+DROP FUNCTION public.uuid_generate_v1mc();
+DROP FUNCTION public.uuid_generate_v1();
+DROP PROCEDURAL LANGUAGE plpgsql;
+DROP SCHEMA users;
+DROP SCHEMA routing;
+DROP SCHEMA public;
+DROP SCHEMA ivr;
 --
 -- Name: ivr; Type: SCHEMA; Schema: -; Owner: asterisk
 --
@@ -17,6 +131,22 @@ CREATE SCHEMA ivr;
 
 
 ALTER SCHEMA ivr OWNER TO asterisk;
+
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+CREATE SCHEMA public;
+
+
+ALTER SCHEMA public OWNER TO postgres;
+
+--
+-- Name: SCHEMA public; Type: COMMENT; Schema: -; Owner: postgres
+--
+
+COMMENT ON SCHEMA public IS 'standard public schema';
+
 
 --
 -- Name: routing; Type: SCHEMA; Schema: -; Owner: asterisk
@@ -937,7 +1067,7 @@ CREATE TABLE sip_peers (
     cancallforward character varying(3) DEFAULT 'yes'::character varying,
     comment character varying(80) DEFAULT ''::character varying,
     "call-limit" smallint DEFAULT 1,
-    lastms integer DEFAULT 0,
+    lastms character varying(5) DEFAULT '0'::character varying,
     regserver character varying(100) DEFAULT NULL::character varying,
     fullcontact character varying(80) DEFAULT NULL::character varying,
     useragent character varying(20) DEFAULT NULL::character varying,
@@ -1097,7 +1227,7 @@ ALTER SEQUENCE directions_dr_id_seq OWNED BY directions.dr_id;
 -- Name: directions_dr_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('directions_dr_id_seq', 9, true);
+SELECT pg_catalog.setval('directions_dr_id_seq', 10, true);
 
 
 --
@@ -1193,7 +1323,7 @@ ALTER SEQUENCE permissions_id_seq OWNED BY permissions.id;
 -- Name: permissions_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('permissions_id_seq', 5, true);
+SELECT pg_catalog.setval('permissions_id_seq', 7, true);
 
 
 --
@@ -1460,84 +1590,107 @@ SET search_path = public, pg_catalog;
 -- Data for Name: blacklist; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY blacklist (id, number, reason, create_date) FROM stdin;
+\.
 
 
 --
 -- Data for Name: cdr; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO cdr VALUES ('2011-12-10 01:02:15+02', '"Alex Radetsky" <1003>', '1003', '201', 'default', 'SIP/t_express-0000000b', 'SIP/201-0000000c', 'Dial', 'SIP/201|120|rtT', 5, 0, 'NO ANSWER', 3, '', '1323471735.11', '');
-INSERT INTO cdr VALUES ('2011-12-09 23:59:55+02', '"Alex Radetsky" <1003>', '1003', '201', 'default', 'SIP/t_express-00000008', 'SIP/201-00000009', 'Dial', 'SIP/201|120|rtT', 6, 0, 'NO ANSWER', 3, '', '1323467995.8', '');
+COPY cdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, lastdata, duration, billsec, disposition, amaflags, accountcode, uniqueid, userfield) FROM stdin;
+2011-12-10 01:02:15+02	"Alex Radetsky" <1003>	1003	201	default	SIP/t_express-0000000b	SIP/201-0000000c	Dial	SIP/201|120|rtT	5	0	NO ANSWER	3		1323471735.11	
+2011-12-12 13:43:23+02	"Alex Radetsky" <1003>	1003	200	default	SIP/t_express-0000001b	SIP/t_express-0000001c	Hangup	17	0	0	FAILED	3		1323690203.27	
+2011-12-12 17:04:18+02	"Im Phone" <201>	201	3039338	default	SIP/201-00000021	SIP/t_express-00000022	Hangup	17	0	0	FAILED	3		1323702258.33	
+2011-12-12 17:06:34+02	"Im Phone" <201>	201	3039338	default	SIP/201-00000023	SIP/t_express-00000024	Dial	SIP/t_express/3039338|120|rtTg	5	4	ANSWERED	3		1323702394.35	
+2011-12-09 23:59:55+02	"Alex Radetsky" <1003>	1003	201	default	SIP/t_express-00000008	SIP/201-00000009	Dial	SIP/201|120|rtT	6	0	NO ANSWER	3		1323467995.8	
+\.
 
 
 --
 -- Data for Name: extensions_conf; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO extensions_conf VALUES (3, 'default', '_X!', 3, 'Hangup', '17');
-INSERT INTO extensions_conf VALUES (2, 'default', '_X!', 2, 'NoOp', '60');
-INSERT INTO extensions_conf VALUES (1, 'default', '_X!', 1, 'AGI', 'NetSDS-route.pl|${CHANNEL}|${EXTEN}');
-INSERT INTO extensions_conf VALUES (4, 'express', '_X!', 1, 'Queue', 'express|rtTn|15|NetSDS-AGI-Integration.pl');
+COPY extensions_conf (id, context, exten, priority, app, appdata) FROM stdin;
+3	default	_X!	3	Hangup	17
+2	default	_X!	2	NoOp	60
+1	default	_X!	1	AGI	NetSDS-route.pl|${CHANNEL}|${EXTEN}
+4	express	_X!	1	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl
+\.
 
 
 --
 -- Data for Name: queue_log; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY queue_log (id, callid, queuename, agent, event, data, "time") FROM stdin;
+\.
 
 
 --
 -- Data for Name: queue_members; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY queue_members (uniqueid, membername, queue_name, interface, penalty, paused) FROM stdin;
+\.
 
 
 --
 -- Data for Name: queue_parsed; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY queue_parsed (id, callid, queue, "time", callerid, agentid, status, success, holdtime, calltime, "position") FROM stdin;
+\.
 
 
 --
 -- Data for Name: queues; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO queues VALUES ('rad', 'default', NULL, NULL, 0, 'wav', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 2, 30, 10, 0, 'ringall', 'no', 'yes', true, true, false, 0, 0, false, NULL, NULL, false, true, 'mixmonitor');
+COPY queues (name, musiconhold, announce, context, timeout, monitor_format, queue_youarenext, queue_thereare, queue_callswaiting, queue_holdtime, queue_minutes, queue_seconds, queue_lessthan, queue_thankyou, queue_reporthold, retry, wrapuptime, maxlen, servicelevel, strategy, joinempty, leavewhenempty, eventmemberstatus, eventwhencalled, reportholdtime, memberdelay, weight, timeoutrestart, periodic_announce, periodic_announce_frequency, ringinuse, setinterfacevar, "monitor-type") FROM stdin;
+rad	default	\N	\N	0	wav	\N	\N	\N	\N	\N	\N	\N	\N	\N	2	30	10	0	ringall	no	yes	t	t	f	0	0	f	\N	\N	f	t	mixmonitor
+\.
 
 
 --
 -- Data for Name: sip_conf; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO sip_conf VALUES (20, 0, 0, 0, 'sip.conf', 'general', 'context', 'default');
-INSERT INTO sip_conf VALUES (21, 0, 1, 0, 'sip.conf', 'general', 'allowoverlap', 'no');
-INSERT INTO sip_conf VALUES (22, 0, 2, 0, 'sip.conf', 'general', 'bindport', '5060');
-INSERT INTO sip_conf VALUES (23, 0, 3, 0, 'sip.conf', 'general', 'bindaddr', '0.0.0.0');
-INSERT INTO sip_conf VALUES (24, 0, 4, 0, 'sip.conf', 'general', 'srvlookup', 'yes');
-INSERT INTO sip_conf VALUES (25, 0, 5, 0, 'sip.conf', 'general', 'register', 't_express:t_wsedr21W@telco.netstyle.com.ua/5060');
-INSERT INTO sip_conf VALUES (26, 0, 6, 0, 'sip.conf', 'general', 'rtcachefriends', 'yes');
-INSERT INTO sip_conf VALUES (27, 0, 7, 0, 'sip.conf', 'general', 'rtsavesysname', 'yes');
-INSERT INTO sip_conf VALUES (28, 0, 8, 0, 'sip.conf', 'general', 'rtupdate', 'yes');
-INSERT INTO sip_conf VALUES (29, 0, 9, 0, 'sip.conf', 'general', 'rtautoclear', 'yes');
+COPY sip_conf (id, cat_metric, var_metric, commented, filename, category, var_name, var_val) FROM stdin;
+20	0	0	0	sip.conf	general	context	default
+21	0	1	0	sip.conf	general	allowoverlap	no
+22	0	2	0	sip.conf	general	bindport	5060
+23	0	3	0	sip.conf	general	bindaddr	0.0.0.0
+24	0	4	0	sip.conf	general	srvlookup	yes
+25	0	5	0	sip.conf	general	register	t_express:t_wsedr21W@telco.netstyle.com.ua/5060
+26	0	6	0	sip.conf	general	rtcachefriends	yes
+27	0	7	0	sip.conf	general	rtsavesysname	yes
+28	0	8	0	sip.conf	general	rtupdate	yes
+29	0	9	0	sip.conf	general	rtautoclear	yes
+\.
 
 
 --
 -- Data for Name: sip_peers; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO sip_peers VALUES (1, 'kyivstar', NULL, NULL, NULL, NULL, 'no', 'yes', 'default', NULL, 'rfc2833', NULL, NULL, 'dynamic', NULL, NULL, NULL, NULL, 'no', NULL, NULL, NULL, NULL, '', 'yes', NULL, NULL, NULL, NULL, 'friend', '', 'all', 'ulaw,alaw', NULL, 0, '', '', 'yes', '', 1, 0, NULL, NULL, NULL, NULL);
-INSERT INTO sip_peers VALUES (2, 'gsm1', NULL, NULL, NULL, NULL, 'no', 'yes', 'default', NULL, 'rfc2833', NULL, NULL, 'dynamic', NULL, NULL, NULL, NULL, 'no', NULL, NULL, NULL, NULL, '', 'yes', NULL, NULL, NULL, NULL, 'friend', '', 'all', 'ulaw,alaw', NULL, 0, '', '', 'yes', '', 1, 0, NULL, NULL, NULL, NULL);
-INSERT INTO sip_peers VALUES (3, 'gsm2', NULL, NULL, NULL, NULL, 'no', 'yes', 'default', NULL, 'rfc2833', NULL, NULL, 'dynamic', NULL, NULL, NULL, NULL, 'no', NULL, NULL, NULL, NULL, '', 'yes', NULL, NULL, NULL, NULL, 'friend', '', 'all', 'ulaw,alaw', NULL, 0, '', '', 'yes', '', 1, 0, NULL, NULL, NULL, NULL);
-INSERT INTO sip_peers VALUES (4, 'gsm3', NULL, NULL, NULL, NULL, 'no', 'yes', 'default', NULL, 'rfc2833', NULL, NULL, 'dynamic', NULL, NULL, NULL, NULL, 'no', NULL, NULL, NULL, NULL, '', 'yes', NULL, NULL, NULL, NULL, 'friend', '', 'all', 'ulaw,alaw', NULL, 0, '', '', 'yes', '', 1, 0, NULL, NULL, NULL, NULL);
-INSERT INTO sip_peers VALUES (56, 't_express', NULL, NULL, NULL, NULL, 'no', 'yes', 'default', NULL, 'rfc2833', NULL, NULL, '193.193.194.6', 'port,invite', NULL, NULL, NULL, 'no', NULL, NULL, NULL, NULL, '', 'yes', NULL, NULL, NULL, 't_wsedr21W', 'friend', 't_express', 'all', 'ulaw,alaw', NULL, 0, '', '', 'yes', '', 1, 0, NULL, NULL, NULL, NULL);
-INSERT INTO sip_peers VALUES (58, '202', NULL, NULL, NULL, NULL, 'no', 'yes', 'default', NULL, 'rfc2833', NULL, NULL, 'dynamic', NULL, NULL, NULL, NULL, 'no', NULL, NULL, NULL, NULL, '', 'yes', NULL, NULL, NULL, 'WhiteBlack', 'friend', '202', 'all', 'ulaw,alaw', NULL, 0, '', '', 'yes', '', 1, -1, '', '', NULL, NULL);
-INSERT INTO sip_peers VALUES (57, '201', NULL, NULL, NULL, NULL, 'no', 'yes', 'default', NULL, 'rfc2833', NULL, NULL, 'dynamic', NULL, NULL, NULL, NULL, 'no', NULL, NULL, NULL, NULL, '5060', 'yes', NULL, NULL, NULL, 'SuperPasswd', 'friend', '201', 'all', 'ulaw,alaw', NULL, 1323473850, '192.168.1.114', '', 'yes', '', 1, 55, '', 'sip:201@192.168.1.114:5060', NULL, NULL);
+COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvite, directmedia, context, defaultip, dtmfmode, fromuser, fromdomain, host, insecure, language, mailbox, md5secret, nat, permit, deny, mask, pickupgroup, port, qualify, restrictcid, rtptimeout, rtpholdtimeout, secret, type, username, disallow, allow, musiconhold, regseconds, ipaddr, regexten, cancallforward, comment, "call-limit", lastms, regserver, fullcontact, useragent, defaultuser) FROM stdin;
+1	kyivstar	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+2	gsm1	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+3	gsm2	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+4	gsm3	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+58	202	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N
+57	201	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N	0	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1323708332	0.0.0.0		yes		1	68		sip:201@192.168.1.114:5060	\N	\N
+\.
 
 
 --
 -- Data for Name: whitelist; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY whitelist (id, number, reason, create_date) FROM stdin;
+\.
 
 
 SET search_path = routing, pg_catalog;
@@ -1546,60 +1699,75 @@ SET search_path = routing, pg_catalog;
 -- Data for Name: directions; Type: TABLE DATA; Schema: routing; Owner: asterisk
 --
 
-INSERT INTO directions VALUES (1, 1, '^3039338$', 1);
-INSERT INTO directions VALUES (7, 2, '^098', 5);
-INSERT INTO directions VALUES (6, 2, '^097', 5);
-INSERT INTO directions VALUES (4, 2, '^096', 5);
-INSERT INTO directions VALUES (3, 2, '^067', 5);
-INSERT INTO directions VALUES (8, 3, '^201$', 5);
-INSERT INTO directions VALUES (9, 4, '^2391515$', 5);
+COPY directions (dr_id, dr_list_item, dr_prefix, dr_prio) FROM stdin;
+1	1	^3039338$	5
+7	2	^098	5
+6	2	^097	5
+4	2	^096	5
+3	2	^067	5
+8	3	^201$	5
+9	4	^2391515$	5
+10	1	^200$	5
+\.
 
 
 --
 -- Data for Name: directions_list; Type: TABLE DATA; Schema: routing; Owner: asterisk
 --
 
-INSERT INTO directions_list VALUES (1, 'Офис Нет Стайл');
-INSERT INTO directions_list VALUES (2, 'Киевстар');
-INSERT INTO directions_list VALUES (3, 'Dmitry Kruglikoff');
-INSERT INTO directions_list VALUES (4, 'taxi express');
+COPY directions_list (dlist_id, dlist_name) FROM stdin;
+1	Офис Нет Стайл
+2	Киевстар
+3	Dmitry Kruglikoff
+4	taxi express
+\.
 
 
 --
 -- Data for Name: permissions; Type: TABLE DATA; Schema: routing; Owner: asterisk
 --
 
-INSERT INTO permissions VALUES (1, 1, 1, 'peer');
-INSERT INTO permissions VALUES (2, 2, 1, 'user');
-INSERT INTO permissions VALUES (3, 3, 58, 'user');
-INSERT INTO permissions VALUES (4, 3, 56, 'peer');
-INSERT INTO permissions VALUES (5, 4, 56, 'peer');
+COPY permissions (id, direction_id, peer_id, peer_type) FROM stdin;
+1	1	1	peer
+2	2	1	user
+3	3	58	user
+4	3	56	peer
+5	4	56	peer
+6	1	56	peer
+7	1	57	user
+\.
 
 
 --
 -- Data for Name: route; Type: TABLE DATA; Schema: routing; Owner: asterisk
 --
 
-INSERT INTO route VALUES (4, 1, 1, 'user', 1);
-INSERT INTO route VALUES (7, 2, 1, 'tgrp', 1);
-INSERT INTO route VALUES (9, 3, 1, 'user', 57);
-INSERT INTO route VALUES (11, 4, 1, 'context', 4);
+COPY route (route_id, route_direction_id, route_step, route_type, route_dest_id) FROM stdin;
+4	1	1	trunk	56
+9	3	1	user	57
+7	2	1	tgrp	1
+11	4	1	context	4
+\.
 
 
 --
 -- Data for Name: trunkgroup_items; Type: TABLE DATA; Schema: routing; Owner: asterisk
 --
 
-INSERT INTO trunkgroup_items VALUES (3, 3, 1, false);
-INSERT INTO trunkgroup_items VALUES (4, 4, 1, false);
-INSERT INTO trunkgroup_items VALUES (2, 2, 1, true);
+COPY trunkgroup_items (tgrp_item_id, tgrp_item_peer_id, tgrp_item_group_id, tgrp_item_last) FROM stdin;
+3	3	1	f
+4	4	1	f
+2	2	1	t
+\.
 
 
 --
 -- Data for Name: trunkgroups; Type: TABLE DATA; Schema: routing; Owner: asterisk
 --
 
-INSERT INTO trunkgroups VALUES (1, 'Группа трако');
+COPY trunkgroups (tgrp_id, tgrp_name) FROM stdin;
+1	Группа трако
+\.
 
 
 SET search_path = public, pg_catalog;
