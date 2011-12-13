@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt2
+Release: alt3
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -62,6 +62,9 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 /etc/asterisk/dialout_examples.ael
 
 %changelog
+* Tue Dec 13 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt3
+- New dialplan and sql files
+
 * Wed Nov 30 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt2
 - New dialplan and sql files
 
