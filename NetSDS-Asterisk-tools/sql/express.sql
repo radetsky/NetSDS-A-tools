@@ -45,9 +45,14 @@ ALTER TABLE ONLY public.sip_conf DROP CONSTRAINT sip_conf_pkey;
 ALTER TABLE ONLY public.queues DROP CONSTRAINT queues_pkey;
 ALTER TABLE ONLY public.queue_members DROP CONSTRAINT queue_members_pkey;
 ALTER TABLE ONLY public.extensions_conf DROP CONSTRAINT extensions_conf_pkey;
+SET search_path = integration, pg_catalog;
+
+ALTER TABLE ONLY integration.ulines DROP CONSTRAINT "ULines_pkey";
 SET search_path = routing, pg_catalog;
 
 SET search_path = public, pg_catalog;
+
+SET search_path = integration, pg_catalog;
 
 SET search_path = routing, pg_catalog;
 
@@ -104,6 +109,9 @@ DROP TABLE public.extensions_conf;
 DROP TABLE public.cdr;
 DROP SEQUENCE public.blacklist_id_seq;
 DROP TABLE public.blacklist;
+SET search_path = integration, pg_catalog;
+
+DROP TABLE integration.ulines;
 SET search_path = routing, pg_catalog;
 
 DROP FUNCTION routing.route_test();
@@ -124,11 +132,30 @@ DROP FUNCTION public.uuid_generate_v4();
 DROP FUNCTION public.uuid_generate_v3(namespace uuid, name text);
 DROP FUNCTION public.uuid_generate_v1mc();
 DROP FUNCTION public.uuid_generate_v1();
+SET search_path = integration, pg_catalog;
+
+DROP FUNCTION integration.get_free_uline();
 DROP PROCEDURAL LANGUAGE plpgsql;
-DROP SCHEMA users;
 DROP SCHEMA routing;
 DROP SCHEMA public;
 DROP SCHEMA ivr;
+DROP SCHEMA integration;
+--
+-- Name: integration; Type: SCHEMA; Schema: -; Owner: asterisk
+--
+
+CREATE SCHEMA integration;
+
+
+ALTER SCHEMA integration OWNER TO asterisk;
+
+--
+-- Name: SCHEMA integration; Type: COMMENT; Schema: -; Owner: asterisk
+--
+
+COMMENT ON SCHEMA integration IS 'Сюда пишем всякие таблицы по интеграции и т.д. ';
+
+
 --
 -- Name: ivr; Type: SCHEMA; Schema: -; Owner: asterisk
 --
@@ -164,15 +191,6 @@ CREATE SCHEMA routing;
 ALTER SCHEMA routing OWNER TO asterisk;
 
 --
--- Name: users; Type: SCHEMA; Schema: -; Owner: asterisk
---
-
-CREATE SCHEMA users;
-
-
-ALTER SCHEMA users OWNER TO asterisk;
-
---
 -- Name: plpgsql; Type: PROCEDURAL LANGUAGE; Schema: -; Owner: postgres
 --
 
@@ -180,6 +198,43 @@ CREATE OR REPLACE PROCEDURAL LANGUAGE plpgsql;
 
 
 ALTER PROCEDURAL LANGUAGE plpgsql OWNER TO postgres;
+
+SET search_path = integration, pg_catalog;
+
+--
+-- Name: get_free_uline(); Type: FUNCTION; Schema: integration; Owner: asterisk
+--
+
+CREATE FUNCTION get_free_uline() RETURNS integer
+    LANGUAGE plpgsql
+    AS $$declare 
+
+UID integer; 
+
+begin 
+
+select id into UID from integration.ulines 
+	where status='free' 
+	order by id asc limit 1
+	for update; 
+if not found then 
+	raise exception 'ALL LINES BUSY'; 
+end if; 
+
+return UID; 
+
+end;
+$$;
+
+
+ALTER FUNCTION integration.get_free_uline() OWNER TO asterisk;
+
+--
+-- Name: FUNCTION get_free_uline(); Type: COMMENT; Schema: integration; Owner: asterisk
+--
+
+COMMENT ON FUNCTION get_free_uline() IS 'Изначально просто  select * from integration.ulines where status=''free'' order by id asc limit 1;  а там посмотрим';
+
 
 SET search_path = public, pg_catalog;
 
@@ -748,11 +803,29 @@ $$;
 
 ALTER FUNCTION routing.route_test() OWNER TO asterisk;
 
-SET search_path = public, pg_catalog;
+SET search_path = integration, pg_catalog;
 
 SET default_tablespace = '';
 
 SET default_with_oids = false;
+
+--
+-- Name: ulines; Type: TABLE; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE ulines (
+    id integer NOT NULL,
+    status character varying(4) DEFAULT 'free'::character varying NOT NULL,
+    callerid_num character varying,
+    cdr_start character varying,
+    channel_name character varying,
+    uniqueid character varying
+);
+
+
+ALTER TABLE integration.ulines OWNER TO asterisk;
+
+SET search_path = public, pg_catalog;
 
 --
 -- Name: blacklist; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
@@ -863,7 +936,7 @@ ALTER SEQUENCE extensions_conf_id_seq OWNED BY extensions_conf.id;
 -- Name: extensions_conf_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('extensions_conf_id_seq', 4, true);
+SELECT pg_catalog.setval('extensions_conf_id_seq', 6, true);
 
 
 --
@@ -952,7 +1025,7 @@ ALTER SEQUENCE queue_members_uniqueid_seq OWNED BY queue_members.uniqueid;
 -- Name: queue_members_uniqueid_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('queue_members_uniqueid_seq', 1, false);
+SELECT pg_catalog.setval('queue_members_uniqueid_seq', 1, true);
 
 
 --
@@ -1353,7 +1426,7 @@ ALTER SEQUENCE directions_dr_id_seq OWNED BY directions.dr_id;
 -- Name: directions_dr_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('directions_dr_id_seq', 10, true);
+SELECT pg_catalog.setval('directions_dr_id_seq', 13, true);
 
 
 --
@@ -1400,7 +1473,7 @@ ALTER SEQUENCE "directions_list_DLIST_ID_seq" OWNED BY directions_list.dlist_id;
 -- Name: directions_list_DLIST_ID_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('"directions_list_DLIST_ID_seq"', 4, true);
+SELECT pg_catalog.setval('"directions_list_DLIST_ID_seq"', 5, true);
 
 
 --
@@ -1449,7 +1522,7 @@ ALTER SEQUENCE permissions_id_seq OWNED BY permissions.id;
 -- Name: permissions_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('permissions_id_seq', 7, true);
+SELECT pg_catalog.setval('permissions_id_seq', 9, true);
 
 
 --
@@ -1509,7 +1582,7 @@ ALTER SEQUENCE route_route_id_seq OWNED BY route.route_id;
 -- Name: route_route_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('route_route_id_seq', 11, true);
+SELECT pg_catalog.setval('route_route_id_seq', 14, true);
 
 
 --
@@ -1717,6 +1790,216 @@ ALTER TABLE trunkgroup_items ALTER COLUMN tgrp_item_id SET DEFAULT nextval('trun
 ALTER TABLE trunkgroups ALTER COLUMN tgrp_id SET DEFAULT nextval('trunkgroups_tgrp_id_seq'::regclass);
 
 
+SET search_path = integration, pg_catalog;
+
+--
+-- Data for Name: ulines; Type: TABLE DATA; Schema: integration; Owner: asterisk
+--
+
+COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM stdin;
+1	free	\N	\N	\N	\N
+2	free	\N	\N	\N	\N
+3	free	\N	\N	\N	\N
+4	free	\N	\N	\N	\N
+5	free	\N	\N	\N	\N
+6	free	\N	\N	\N	\N
+7	free	\N	\N	\N	\N
+8	free	\N	\N	\N	\N
+9	free	\N	\N	\N	\N
+10	free	\N	\N	\N	\N
+11	free	\N	\N	\N	\N
+12	free	\N	\N	\N	\N
+13	free	\N	\N	\N	\N
+14	free	\N	\N	\N	\N
+15	free	\N	\N	\N	\N
+16	free	\N	\N	\N	\N
+17	free	\N	\N	\N	\N
+18	free	\N	\N	\N	\N
+19	free	\N	\N	\N	\N
+20	free	\N	\N	\N	\N
+21	free	\N	\N	\N	\N
+22	free	\N	\N	\N	\N
+23	free	\N	\N	\N	\N
+24	free	\N	\N	\N	\N
+25	free	\N	\N	\N	\N
+26	free	\N	\N	\N	\N
+27	free	\N	\N	\N	\N
+28	free	\N	\N	\N	\N
+29	free	\N	\N	\N	\N
+30	free	\N	\N	\N	\N
+31	free	\N	\N	\N	\N
+32	free	\N	\N	\N	\N
+33	free	\N	\N	\N	\N
+34	free	\N	\N	\N	\N
+35	free	\N	\N	\N	\N
+36	free	\N	\N	\N	\N
+37	free	\N	\N	\N	\N
+38	free	\N	\N	\N	\N
+39	free	\N	\N	\N	\N
+40	free	\N	\N	\N	\N
+41	free	\N	\N	\N	\N
+42	free	\N	\N	\N	\N
+43	free	\N	\N	\N	\N
+44	free	\N	\N	\N	\N
+45	free	\N	\N	\N	\N
+46	free	\N	\N	\N	\N
+47	free	\N	\N	\N	\N
+48	free	\N	\N	\N	\N
+49	free	\N	\N	\N	\N
+50	free	\N	\N	\N	\N
+51	free	\N	\N	\N	\N
+52	free	\N	\N	\N	\N
+53	free	\N	\N	\N	\N
+54	free	\N	\N	\N	\N
+55	free	\N	\N	\N	\N
+56	free	\N	\N	\N	\N
+57	free	\N	\N	\N	\N
+58	free	\N	\N	\N	\N
+59	free	\N	\N	\N	\N
+60	free	\N	\N	\N	\N
+61	free	\N	\N	\N	\N
+62	free	\N	\N	\N	\N
+63	free	\N	\N	\N	\N
+64	free	\N	\N	\N	\N
+65	free	\N	\N	\N	\N
+66	free	\N	\N	\N	\N
+67	free	\N	\N	\N	\N
+68	free	\N	\N	\N	\N
+69	free	\N	\N	\N	\N
+70	free	\N	\N	\N	\N
+71	free	\N	\N	\N	\N
+72	free	\N	\N	\N	\N
+73	free	\N	\N	\N	\N
+74	free	\N	\N	\N	\N
+75	free	\N	\N	\N	\N
+76	free	\N	\N	\N	\N
+77	free	\N	\N	\N	\N
+78	free	\N	\N	\N	\N
+79	free	\N	\N	\N	\N
+80	free	\N	\N	\N	\N
+81	free	\N	\N	\N	\N
+82	free	\N	\N	\N	\N
+83	free	\N	\N	\N	\N
+84	free	\N	\N	\N	\N
+85	free	\N	\N	\N	\N
+86	free	\N	\N	\N	\N
+87	free	\N	\N	\N	\N
+88	free	\N	\N	\N	\N
+89	free	\N	\N	\N	\N
+90	free	\N	\N	\N	\N
+91	free	\N	\N	\N	\N
+92	free	\N	\N	\N	\N
+93	free	\N	\N	\N	\N
+94	free	\N	\N	\N	\N
+95	free	\N	\N	\N	\N
+96	free	\N	\N	\N	\N
+97	free	\N	\N	\N	\N
+98	free	\N	\N	\N	\N
+99	free	\N	\N	\N	\N
+100	free	\N	\N	\N	\N
+101	free	\N	\N	\N	\N
+102	free	\N	\N	\N	\N
+103	free	\N	\N	\N	\N
+104	free	\N	\N	\N	\N
+105	free	\N	\N	\N	\N
+106	free	\N	\N	\N	\N
+107	free	\N	\N	\N	\N
+108	free	\N	\N	\N	\N
+109	free	\N	\N	\N	\N
+110	free	\N	\N	\N	\N
+111	free	\N	\N	\N	\N
+112	free	\N	\N	\N	\N
+113	free	\N	\N	\N	\N
+114	free	\N	\N	\N	\N
+115	free	\N	\N	\N	\N
+116	free	\N	\N	\N	\N
+117	free	\N	\N	\N	\N
+118	free	\N	\N	\N	\N
+119	free	\N	\N	\N	\N
+120	free	\N	\N	\N	\N
+121	free	\N	\N	\N	\N
+122	free	\N	\N	\N	\N
+123	free	\N	\N	\N	\N
+124	free	\N	\N	\N	\N
+125	free	\N	\N	\N	\N
+126	free	\N	\N	\N	\N
+127	free	\N	\N	\N	\N
+128	free	\N	\N	\N	\N
+129	free	\N	\N	\N	\N
+130	free	\N	\N	\N	\N
+131	free	\N	\N	\N	\N
+132	free	\N	\N	\N	\N
+133	free	\N	\N	\N	\N
+134	free	\N	\N	\N	\N
+135	free	\N	\N	\N	\N
+136	free	\N	\N	\N	\N
+137	free	\N	\N	\N	\N
+138	free	\N	\N	\N	\N
+139	free	\N	\N	\N	\N
+140	free	\N	\N	\N	\N
+141	free	\N	\N	\N	\N
+142	free	\N	\N	\N	\N
+143	free	\N	\N	\N	\N
+144	free	\N	\N	\N	\N
+145	free	\N	\N	\N	\N
+146	free	\N	\N	\N	\N
+147	free	\N	\N	\N	\N
+148	free	\N	\N	\N	\N
+149	free	\N	\N	\N	\N
+150	free	\N	\N	\N	\N
+151	free	\N	\N	\N	\N
+152	free	\N	\N	\N	\N
+153	free	\N	\N	\N	\N
+154	free	\N	\N	\N	\N
+155	free	\N	\N	\N	\N
+156	free	\N	\N	\N	\N
+157	free	\N	\N	\N	\N
+158	free	\N	\N	\N	\N
+159	free	\N	\N	\N	\N
+160	free	\N	\N	\N	\N
+161	free	\N	\N	\N	\N
+162	free	\N	\N	\N	\N
+163	free	\N	\N	\N	\N
+164	free	\N	\N	\N	\N
+165	free	\N	\N	\N	\N
+166	free	\N	\N	\N	\N
+167	free	\N	\N	\N	\N
+168	free	\N	\N	\N	\N
+169	free	\N	\N	\N	\N
+170	free	\N	\N	\N	\N
+171	free	\N	\N	\N	\N
+172	free	\N	\N	\N	\N
+173	free	\N	\N	\N	\N
+174	free	\N	\N	\N	\N
+175	free	\N	\N	\N	\N
+176	free	\N	\N	\N	\N
+177	free	\N	\N	\N	\N
+178	free	\N	\N	\N	\N
+179	free	\N	\N	\N	\N
+180	free	\N	\N	\N	\N
+181	free	\N	\N	\N	\N
+182	free	\N	\N	\N	\N
+183	free	\N	\N	\N	\N
+184	free	\N	\N	\N	\N
+185	free	\N	\N	\N	\N
+186	free	\N	\N	\N	\N
+187	free	\N	\N	\N	\N
+188	free	\N	\N	\N	\N
+189	free	\N	\N	\N	\N
+190	free	\N	\N	\N	\N
+191	free	\N	\N	\N	\N
+192	free	\N	\N	\N	\N
+193	free	\N	\N	\N	\N
+194	free	\N	\N	\N	\N
+195	free	\N	\N	\N	\N
+196	free	\N	\N	\N	\N
+197	free	\N	\N	\N	\N
+198	free	\N	\N	\N	\N
+199	free	\N	\N	\N	\N
+200	free	\N	\N	\N	\N
+\.
+
+
 SET search_path = public, pg_catalog;
 
 --
@@ -1736,6 +2019,52 @@ COPY cdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, last
 2011-12-12 13:43:23+02	"Alex Radetsky" <1003>	1003	200	default	SIP/t_express-0000001b	SIP/t_express-0000001c	Hangup	17	0	0	FAILED	3		1323690203.27	
 2011-12-12 17:04:18+02	"Im Phone" <201>	201	3039338	default	SIP/201-00000021	SIP/t_express-00000022	Hangup	17	0	0	FAILED	3		1323702258.33	
 2011-12-12 17:06:34+02	"Im Phone" <201>	201	3039338	default	SIP/201-00000023	SIP/t_express-00000024	Dial	SIP/t_express/3039338|120|rtTg	5	4	ANSWERED	3		1323702394.35	
+2011-12-13 09:49:36+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000028	SIP/201-00000029	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	47	35	ANSWERED	3		1323762576.40	
+2011-12-13 16:58:33+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-0000002c	SIP/201-0000002d	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	27	10	ANSWERED	3		1323788313.44	
+2011-12-13 17:00:22+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000030	SIP/201-00000031	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	53	52	ANSWERED	3		1323788422.48	
+2011-12-13 17:05:34+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000036	SIP/201-00000037	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	16	0	ANSWERED	3		1323788734.54	
+2011-12-15 18:19:46+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000039	SIP/201-0000003a	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	10	6	ANSWERED	3		1323965986.57	
+2011-12-15 18:23:57+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-0000003b	SIP/201-0000003c	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	9	6	ANSWERED	3		1323966237.59	
+2011-12-15 18:24:50+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-0000003d	SIP/201-0000003e	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	10	8	ANSWERED	3		1323966290.61	
+2011-12-15 18:25:37+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000040	SIP/201-00000041	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	51	49	ANSWERED	3		1323966337.64	
+2011-12-15 18:27:01+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000046	SIP/201-00000047	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	22	19	ANSWERED	3		1323966421.70	
+2011-12-15 18:48:33+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000000	SIP/201-00000001	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	23	21	ANSWERED	3		1323967713.0	
+2011-12-15 19:39:42+02	"Im Phone" <201>	201	0	default	SIP/201-00000000		Park	10	10	10	ANSWERED	3		1323970782.0	
+2011-12-15 19:41:26+02	"Im Phone" <201>	201	0	default	SIP/201-00000001		Park		36	36	ANSWERED	3		1323970886.2	
+2011-12-15 19:47:18+02	"Im Phone" <201>	201	0	default	SIP/201-00000004		Park		11	10	ANSWERED	3		1323971238.6	
+2011-12-15 19:48:24+02	"Im Phone" <201>	201	0	default	SIP/201-00000005		Park		4	4	ANSWERED	3		1323971304.8	
+2011-12-15 19:47:06+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000002	SIP/201-00000003	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	96	94	ANSWERED	3		1323971226.4	
+2011-12-15 19:53:54+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000006	SIP/201-00000007	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	10	5	ANSWERED	3		1323971634.10	
+2011-12-15 19:54:58+02	"Im Phone" <201>	201	0	default	SIP/201-00000011		Park		6	6	ANSWERED	3		1323971698.21	
+2011-12-15 19:54:34+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-0000000f	SIP/201-00000010	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	70	66	ANSWERED	3		1323971674.19	
+2011-12-15 19:58:24+02	"Im Phone" <201>	201	0	default	SIP/201-00000014		Park		13	13	ANSWERED	3		1323971904.25	
+2011-12-15 19:58:04+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000012	SIP/201-00000013	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	42	38	ANSWERED	3		1323971884.23	
+2011-12-15 19:59:29+02	"Im Phone" <201>	201	0	default	SIP/201-00000017		Park		12	12	ANSWERED	3		1323971969.29	
+2011-12-15 19:59:21+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000015	SIP/201-00000016	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	51	49	ANSWERED	3		1323971961.27	
+2011-12-15 20:02:30+02	"Im Phone" <201>	201	0	default	SIP/201-0000001a		Park		7	7	ANSWERED	3		1323972150.33	
+2011-12-15 20:02:22+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000018	SIP/201-00000019	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	58	56	ANSWERED	3		1323972142.31	
+2011-12-15 20:09:57+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-0000001b	SIP/201-0000001c	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	43	41	ANSWERED	3		1323972597.35	
+2011-12-15 20:11:49+02			parkannounce	parkingslot	Local/parkannounce@parkingslot-8c3f,2		Hangup		0	0	ANSWERED	3		1323972709.46	
+2011-12-15 20:11:49+02			parkannounce	parkingslot	Local/parkannounce@parkingslot-8c3f,1				0	0	ANSWERED	3		1323972709.45	
+2011-12-15 20:11:41+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-0000001e	SIP/201-0000001f	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	29	28	ANSWERED	3		1323972701.41	
+2011-12-15 20:16:44+02			parkannounce	parkingslot	Local/parkannounce@parkingslot-c88f,2		Hangup		0	0	ANSWERED	3		1323973004.52	
+2011-12-15 20:16:44+02			parkannounce	parkingslot	Local/parkannounce@parkingslot-c88f,1				0	0	ANSWERED	3		1323973004.51	
+2011-12-15 20:16:39+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000021	SIP/201-00000022	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	34	33	ANSWERED	3		1323972999.47	
+2011-12-15 20:22:27+02			parkannounce	parkingslot	Local/parkannounce@parkingslot-bfae,2		Hangup		0	0	ANSWERED	3		1323973347.58	
+2011-12-15 20:22:27+02			parkannounce	parkingslot	Local/parkannounce@parkingslot-bfae,1				0	0	ANSWERED	3		1323973347.57	
+2011-12-15 20:22:15+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000024	SIP/201-00000025	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	19	17	ANSWERED	3		1323973335.53	
+2011-12-15 20:47:10+02	"Im Phone" <201>	201	i	parkingslot	SIP/201-00000027		Hangup		0	0	ANSWERED	3		1323974830.59	
+2011-12-15 20:47:44+02			parkannounce	parkingslot	Local/parkannounce@parkingslot-f7c5,1				0	0	ANSWERED	3		1323974864.64	
+2011-12-15 20:47:44+02			parkannounce	parkingslot	Local/parkannounce@parkingslot-f7c5,2		Answer		0	0	ANSWERED	3		1323974864.65	
+2011-12-15 20:47:38+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000028	SIP/201-00000029	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	7	5	ANSWERED	3		1323974858.60	
+2011-12-15 20:47:57+02	"Im Phone" <201>	201	10	parkingslot	SIP/201-0000002b	SIP/t_express-00000028	ParkedCall	10	29	29	ANSWERED	3		1323974877.66	
+2011-12-15 20:49:50+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-0000002c	SIP/201-0000002d	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	19	17	ANSWERED	3		1323974990.67	
+2011-12-15 20:50:30+02	"Im Phone" <201>	201	10	parkingslot	SIP/201-0000002f	SIP/t_express-0000002c	ParkedCall	10	1	1	ANSWERED	3		1323975030.71	
+2011-12-15 20:50:52+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000030	SIP/201-00000031	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	9	8	ANSWERED	3		1323975052.72	
+2011-12-15 20:51:08+02	"Im Phone" <201>	201	10	parkingslot	SIP/201-00000033	SIP/t_express-00000030	ParkedCall	10	4	4	ANSWERED	3		1323975068.76	
+2011-12-15 21:03:03+02	"Im Phone" <201>	201	0	default	SIP/201-00000036		Park		2	2	ANSWERED	3		1323975783.79	
+2011-12-15 21:02:44+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000034	SIP/201-00000035	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	34	32	ANSWERED	3		1323975764.77	
+2011-12-15 21:03:05+02	"Im Phone" <201>	201	0	default	SIP/201-00000037		Park		13	13	ANSWERED	3		1323975785.81	
 2011-12-09 23:59:55+02	"Alex Radetsky" <1003>	1003	201	default	SIP/t_express-00000008	SIP/201-00000009	Dial	SIP/201|120|rtT	6	0	NO ANSWER	3		1323467995.8	
 \.
 
@@ -1749,6 +2078,8 @@ COPY extensions_conf (id, context, exten, priority, app, appdata) FROM stdin;
 2	default	_X!	2	NoOp	60
 1	default	_X!	1	AGI	NetSDS-route.pl|${CHANNEL}|${EXTEN}
 4	express	_X!	1	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl
+6	parkingslot	_X!	1	NoOp	see extensions.conf
+5	express	h	1	NoOp	EOCall: ${CALLERID(num)} ${CDR(start)}
 \.
 
 
@@ -1765,6 +2096,7 @@ COPY queue_log (id, callid, queuename, agent, event, data, "time") FROM stdin;
 --
 
 COPY queue_members (uniqueid, membername, queue_name, interface, penalty, paused) FROM stdin;
+1	201	express	SIP/201	\N	\N
 \.
 
 
@@ -1781,7 +2113,7 @@ COPY queue_parsed (id, callid, queue, "time", callerid, agentid, status, success
 --
 
 COPY queues (name, musiconhold, announce, context, timeout, monitor_format, queue_youarenext, queue_thereare, queue_callswaiting, queue_holdtime, queue_minutes, queue_seconds, queue_lessthan, queue_thankyou, queue_reporthold, retry, wrapuptime, maxlen, servicelevel, strategy, joinempty, leavewhenempty, eventmemberstatus, eventwhencalled, reportholdtime, memberdelay, weight, timeoutrestart, periodic_announce, periodic_announce_frequency, ringinuse, setinterfacevar, "monitor-type") FROM stdin;
-rad	default	\N	\N	0	wav	\N	\N	\N	\N	\N	\N	\N	\N	\N	2	30	10	0	ringall	no	yes	t	t	f	0	0	f	\N	\N	f	t	mixmonitor
+express	default	\N	\N	0		\N	\N	\N	\N	\N	\N	\N	\N	\N	2	30	10	0	ringall	no	yes	t	t	f	0	0	f	\N	\N	f	t	mixmonitor
 \.
 
 
@@ -1808,13 +2140,13 @@ COPY sip_conf (id, cat_metric, var_metric, commented, filename, category, var_na
 --
 
 COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvite, directmedia, context, defaultip, dtmfmode, fromuser, fromdomain, host, insecure, language, mailbox, md5secret, nat, permit, deny, mask, pickupgroup, port, qualify, restrictcid, rtptimeout, rtpholdtimeout, secret, type, username, disallow, allow, musiconhold, regseconds, ipaddr, regexten, cancallforward, comment, "call-limit", lastms, regserver, fullcontact, useragent, defaultuser) FROM stdin;
-1	kyivstar	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-2	gsm1	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-3	gsm2	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-4	gsm3	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-58	202	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N
-57	201	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1323729061	192.168.1.114		yes		1	8		sip:201@192.168.1.114:5060	\N	\N
+1	kyivstar	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+2	gsm1	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+3	gsm2	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+4	gsm3	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+58	202	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N
+57	201	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	0			yes		1				\N	\N
 \.
 
 
@@ -1851,6 +2183,8 @@ COPY directions (dr_id, dr_list_item, dr_prefix, dr_prio) FROM stdin;
 8	3	^201$	5
 9	4	^2391515$	5
 10	1	^200$	5
+12	5	^0$	5
+13	5	^1\\d$	5
 \.
 
 
@@ -1863,6 +2197,7 @@ COPY directions_list (dlist_id, dlist_name) FROM stdin;
 4	taxi express
 1	NetStyle Office
 2	KyivStar
+5	parking slot
 \.
 
 
@@ -1878,6 +2213,7 @@ COPY permissions (id, direction_id, peer_id, peer_type) FROM stdin;
 5	4	56	peer
 6	1	56	peer
 7	1	57	user
+9	5	57	user
 \.
 
 
@@ -1890,6 +2226,7 @@ COPY route (route_id, route_direction_id, route_step, route_type, route_dest_id)
 9	3	1	user	57
 7	2	1	tgrp	1
 11	4	1	context	4
+14	5	1	context	6
 \.
 
 
@@ -1911,6 +2248,16 @@ COPY trunkgroup_items (tgrp_item_id, tgrp_item_peer_id, tgrp_item_group_id, tgrp
 COPY trunkgroups (tgrp_id, tgrp_name) FROM stdin;
 1	Группа трако
 \.
+
+
+SET search_path = integration, pg_catalog;
+
+--
+-- Name: ULines_pkey; Type: CONSTRAINT; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY ulines
+    ADD CONSTRAINT "ULines_pkey" PRIMARY KEY (id);
 
 
 SET search_path = public, pg_catalog;

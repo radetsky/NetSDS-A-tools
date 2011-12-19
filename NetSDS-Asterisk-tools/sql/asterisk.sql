@@ -28,6 +28,22 @@ SET client_min_messages = warning;
 SET escape_string_warning = off;
 
 --
+-- Name: integration; Type: SCHEMA; Schema: -; Owner: asterisk
+--
+
+CREATE SCHEMA integration;
+
+
+ALTER SCHEMA integration OWNER TO asterisk;
+
+--
+-- Name: SCHEMA integration; Type: COMMENT; Schema: -; Owner: asterisk
+--
+
+COMMENT ON SCHEMA integration IS 'Сюда пишем всякие таблицы по интеграции и т.д. ';
+
+
+--
 -- Name: ivr; Type: SCHEMA; Schema: -; Owner: asterisk
 --
 
@@ -46,15 +62,6 @@ CREATE SCHEMA routing;
 ALTER SCHEMA routing OWNER TO asterisk;
 
 --
--- Name: users; Type: SCHEMA; Schema: -; Owner: asterisk
---
-
-CREATE SCHEMA users;
-
-
-ALTER SCHEMA users OWNER TO asterisk;
-
---
 -- Name: plpgsql; Type: PROCEDURAL LANGUAGE; Schema: -; Owner: postgres
 --
 
@@ -62,6 +69,43 @@ CREATE OR REPLACE PROCEDURAL LANGUAGE plpgsql;
 
 
 ALTER PROCEDURAL LANGUAGE plpgsql OWNER TO postgres;
+
+SET search_path = integration, pg_catalog;
+
+--
+-- Name: get_free_uline(); Type: FUNCTION; Schema: integration; Owner: asterisk
+--
+
+CREATE FUNCTION get_free_uline() RETURNS integer
+    LANGUAGE plpgsql
+    AS $$declare 
+
+UID integer; 
+
+begin 
+
+select id into UID from integration.ulines 
+	where status='free' 
+	order by id asc limit 1
+	for update; 
+if not found then 
+	raise exception 'ALL LINES BUSY'; 
+end if; 
+
+return UID; 
+
+end;
+$$;
+
+
+ALTER FUNCTION integration.get_free_uline() OWNER TO asterisk;
+
+--
+-- Name: FUNCTION get_free_uline(); Type: COMMENT; Schema: integration; Owner: asterisk
+--
+
+COMMENT ON FUNCTION get_free_uline() IS 'Изначально просто  select * from integration.ulines where status=''free'' order by id asc limit 1;  а там посмотрим';
+
 
 SET search_path = public, pg_catalog;
 
@@ -630,11 +674,29 @@ $$;
 
 ALTER FUNCTION routing.route_test() OWNER TO asterisk;
 
-SET search_path = public, pg_catalog;
+SET search_path = integration, pg_catalog;
 
 SET default_tablespace = '';
 
 SET default_with_oids = false;
+
+--
+-- Name: ulines; Type: TABLE; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE ulines (
+    id integer NOT NULL,
+    status character varying(4) DEFAULT 'free'::character varying NOT NULL,
+    callerid_num character varying,
+    cdr_start character varying,
+    channel_name character varying,
+    uniqueid character varying
+);
+
+
+ALTER TABLE integration.ulines OWNER TO asterisk;
+
+SET search_path = public, pg_catalog;
 
 --
 -- Name: blacklist; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
@@ -1492,6 +1554,16 @@ ALTER TABLE trunkgroup_items ALTER COLUMN tgrp_item_id SET DEFAULT nextval('trun
 --
 
 ALTER TABLE trunkgroups ALTER COLUMN tgrp_id SET DEFAULT nextval('trunkgroups_tgrp_id_seq'::regclass);
+
+
+SET search_path = integration, pg_catalog;
+
+--
+-- Name: ULines_pkey; Type: CONSTRAINT; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY ulines
+    ADD CONSTRAINT "ULines_pkey" PRIMARY KEY (id);
 
 
 SET search_path = public, pg_catalog;
