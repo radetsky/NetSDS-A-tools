@@ -249,6 +249,7 @@ sub _mixmonitor_filename {
 
 }
 
+
 sub _init_mixmonitor {
     my $this = shift;
 
@@ -263,6 +264,12 @@ sub _init_mixmonitor {
     $this->agi->verbose("CallerID(num)+CDR(start)=$callerid_num $cdr_start");
 
     $this->_init_uline( $callerid_num, $cdr_start );
+	
+	# if exten >0 < 200 then insert copy of the uline with link to voice file. 
+	if ( ( $this->{'exten'} > 0 ) and ( $this->{'exten'} < 200 ) ) { 
+		# parked call 
+		$this->_add_next_recording($callerid_num,$cdr_start,$exten);
+	}
 
 }
 
