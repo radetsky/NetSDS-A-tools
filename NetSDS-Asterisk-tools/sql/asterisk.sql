@@ -681,6 +681,44 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: recordings; Type: TABLE; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE recordings (
+    id bigint NOT NULL,
+    uline_id integer,
+    original_file character varying,
+    concatenated boolean DEFAULT false,
+    result_file character varying,
+    previous_record bigint,
+    next_record bigint
+);
+
+
+ALTER TABLE integration.recordings OWNER TO asterisk;
+
+--
+-- Name: recordings_id_seq; Type: SEQUENCE; Schema: integration; Owner: asterisk
+--
+
+CREATE SEQUENCE recordings_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE integration.recordings_id_seq OWNER TO asterisk;
+
+--
+-- Name: recordings_id_seq; Type: SEQUENCE OWNED BY; Schema: integration; Owner: asterisk
+--
+
+ALTER SEQUENCE recordings_id_seq OWNED BY recordings.id;
+
+
+--
 -- Name: ulines; Type: TABLE; Schema: integration; Owner: asterisk; Tablespace: 
 --
 
@@ -1447,6 +1485,15 @@ ALTER TABLE routing.trunkgroups_tgrp_id_seq OWNER TO asterisk;
 ALTER SEQUENCE trunkgroups_tgrp_id_seq OWNED BY trunkgroups.tgrp_id;
 
 
+SET search_path = integration, pg_catalog;
+
+--
+-- Name: id; Type: DEFAULT; Schema: integration; Owner: asterisk
+--
+
+ALTER TABLE recordings ALTER COLUMN id SET DEFAULT nextval('recordings_id_seq'::regclass);
+
+
 SET search_path = public, pg_catalog;
 
 --
@@ -1564,6 +1611,14 @@ SET search_path = integration, pg_catalog;
 
 ALTER TABLE ONLY ulines
     ADD CONSTRAINT "ULines_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: recordings_pkey; Type: CONSTRAINT; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY recordings
+    ADD CONSTRAINT recordings_pkey PRIMARY KEY (id);
 
 
 SET search_path = public, pg_catalog;

@@ -41,9 +41,17 @@ use warnings;
 
 use base qw(NetSDS::App);
 use NetSDS::Asterisk::EventListener;
+use Data::Dumper; 
 
 sub start {
     my $this = shift;
+
+	$SIG{TERM} = sub { 
+		exit(-1);
+	};
+	$SIG{INT} = sub { 
+		exit(-1);
+	}; 
 
     $this->mk_accessors('el');
     $this->mk_accessors('dbh');
@@ -132,7 +140,139 @@ sub _el_connect {
 sub _clear_ulines {
     my $this = shift;
 
+    # connect
+    unless ( defined( $this->conf->{'el'}->{'host'} ) ) {
+        $this->speak("Can't file el->host in configuration.");
+        exit(-1);
+    }
+    unless ( defined( $this->conf->{'el'}->{'port'} ) ) {
+        $this->speak("Can't file el->port in configuration.");
+        exit(-1);
+    }
+    unless ( defined( $this->conf->{'el'}->{'username'} ) ) {
+        $this->speak("Can't file el->username in configuration.");
+        exit(-1);
+    }
+    unless ( defined( $this->conf->{'el'}->{'secret'} ) ) {
+        $this->speak("Can't file el->secret in configuration.");
+        exit(-1);
+    }
+
+    my $el_host     = $this->conf->{'el'}->{'host'};
+    my $el_port     = $this->conf->{'el'}->{'port'};
+    my $el_username = $this->conf->{'el'}->{'username'};
+    my $el_secret   = $this->conf->{'el'}->{'secret'};
+
+    my $manager = NetSDS::Asterisk::Manager->new(
+        host     => $el_host,
+        port     => $el_port,
+        username => $el_username,
+        secret   => $el_secret,
+        events   => 'Off'
+    );
+
+    my $connected = $manager->connect;
+    unless ( defined($connected) ) {
+        $this->speak("Can't connect to the asterisk manager interface.");
+        $this->log( "warning",
+            "Can't connect to the asterisk manager interface." );
+        exit(-1);
+    }
+
+    # get status
+
+    my @liststatus = $this->_get_status($manager);
+	my $busyulines = $this->_get_busy_ulines;
+
+	#warn Dumper (\@liststatus); 
+	#warn Dumper ($busyulines);
+
+    # compare channels with ulines
+	my $id = undef; 
+	my $channel = undef; 
+	my $found = undef; 
+
+	foreach my $i (@{$busyulines}) {
+		$id = ${$i}[0];
+		$channel = ${$i}[1]; 
+		$found = undef; 
+		foreach my $status ( @liststatus ) {
+			if ($status->{'Channel'} eq $channel ) { 
+				$found = 1; 
+				last; 
+			}
+		}
+		unless ( defined ( $found ) ) { 
+			$this->_free_uline ($channel); 
+		}
+	}
+
+
+
+    # clear offline channels
+
 }
+
+sub _get_status {
+    my $this    = shift;
+    my $manager = shift;
+
+    my $sent = $manager->sendcommand( 'Action' => 'Status' );
+
+    unless ( defined($sent) ) {
+        return undef;
+    }
+
+    my $reply = $manager->receive_answer();
+
+    unless ( defined ( $reply ) ) {
+        return undef;
+    }
+
+    my $status = $reply->{'Response'};
+
+    unless ( defined($status) ) {
+        return undef;
+    }
+
+    if ( $status ne 'Success' ) {
+        $this->seterror('Status: Response not success');
+        return undef;
+    }
+
+    # reading from spcket while did not receive Event: StatusComplete
+
+    my @replies;
+    while (1) {
+        $reply  = $manager->receive_answer();
+        $status = $reply->{'Event'};
+        if ( $status eq 'StatusComplete' ) {
+            last;
+        }
+        push @replies, $reply;
+    }
+    return @replies;
+
+}
+
+sub _get_busy_ulines { 
+	my $this = shift; 
+
+	$this->_begin; 
+	
+	my $sth = $this->dbh->prepare("select id,channel_name from integration.ulines where status='busy' order by id asc");
+	eval { 
+		my $rv = $sth->execute; 
+	}; 
+	if ($@) { 
+		$this->_exit($this->dbh->errstr);
+	}
+	my $busylines = $sth->fetchall_arrayref;
+	$this->dbh->commit; 
+
+	return $busylines; 
+}	
+
 
 sub _free_uline {
     my $this    = shift;
@@ -141,12 +281,14 @@ sub _free_uline {
     $this->_begin;
 
     my $sth = $this->dbh->prepare(
-        "select id from integration.ulines where channel=? for update");
-    eval { my $rv = $sth->execute($channel); }
-      if ($@)
+        "select id from integration.ulines where channel_name=? for update");
+
+	eval { my $rv = $sth->execute($channel); };
+    if ($@)
     {
         $this->_exit( $this->dbh->errstr );
     }
+
     my $result = $sth->fetchrow_hashref;
     unless ( defined($result) ) {
         $this->log( "warning",
@@ -159,14 +301,16 @@ sub _free_uline {
 
     $sth = $this->dbh->prepare(
         "update integration.ulines set status='free' where id=?");
-    eval { my $rv = $sth->execute($channel); }
-    if ($@)
+    eval { my $rv = $sth->execute($id); };
+      if ($@)
     {
         $this->_exit( $this->dbh->errstr );
     }
-	$this->dbh->commit; 
-	$this->log("info","$channel hangup witn intergration.ulines done");
-	return 1; 
+    $this->dbh->commit;
+    $this->log( "info", "$channel hangup witn integration.ulines done" );
+	$this->speak ("$channel hangup witn integration.ulines done" );
+
+    return 1;
 }
 
 sub _begin {
@@ -195,7 +339,12 @@ sub process {
 
     while (1) {
         $event = $this->el->_getEvent();
-        unless ( defined( $event->{'Event'} ) ) {
+		unless ( $event ) { 
+			sleep(1);
+			next;
+		}
+
+        unless ( defined ( $event->{'Event'} ) ) {
             warn Dumper($event);
             next;
         }

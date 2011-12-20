@@ -268,7 +268,7 @@ sub _init_mixmonitor {
 	# if exten >0 < 200 then insert copy of the uline with link to voice file. 
 	if ( ( $this->{'exten'} > 0 ) and ( $this->{'exten'} < 200 ) ) { 
 		# parked call 
-		$this->_add_next_recording($callerid_num,$cdr_start,$exten);
+		$this->_add_next_recording($callerid_num,$cdr_start,$this->{'exten'});
 	}
 
 }
