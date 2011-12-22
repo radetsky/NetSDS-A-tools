@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt5
+Release: alt6
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -17,7 +17,9 @@ BuildRequires: perl-Data-UUID
 BuildRequires: pwgen
 BuildRequires: perl-Getopt-Mixed
 BuildRequires: perl-NetSDS
+BuildRequires: perl-NetSDS-Asterisk
 
+Requires: perl-NetSDS-Asterisk
 Requires: perl-NetSDS
 Requires: perl-Data-UUID
 Requires: pwgen
@@ -73,6 +75,9 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 /etc/NetSDS/asterisk-router.conf
 
 %changelog
+* Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt6
+- Added perl-NetSDS-Asterisk into Requirements
+
 * Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt5
 - Added perl-NetSDS into Requirements
 
