@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt4
+Release: alt5
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -73,6 +73,9 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 /etc/NetSDS/asterisk-router.conf
 
 %changelog
+* Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt5
+- Added perl-NetSDS into Requirements
+
 * Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt4
 - Added NetSDS-hangupd service and init script
 
