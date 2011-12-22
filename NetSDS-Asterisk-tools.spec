@@ -16,7 +16,9 @@ Source: %origname-%version.tar.gz
 BuildRequires: perl-Data-UUID
 BuildRequires: pwgen
 BuildRequires: perl-Getopt-Mixed
+BuildRequires: perl-NetSDS
 
+Requires: perl-NetSDS
 Requires: perl-Data-UUID
 Requires: pwgen
 Requires: perl-Getopt-Mixed
