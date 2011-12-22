@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt7
+Release: alt8
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -79,10 +79,13 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 /usr/share/doc/NetSDS-Asterisk-tools/*
 /usr/share/doc/NetSDS-Asterisk-tools/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
-%_sysconfdir/NetSDS-hangupd
+%_initdir/NetSDS-hangupd
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 
 %changelog
+* Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt8
+- Fixed spec
+
 * Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt7
 - Added service start-stop requirements
 
