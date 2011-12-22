@@ -745,8 +745,9 @@ CREATE TABLE workplaces (
     ip_addr_tel character varying,
     teletype character varying,
     autoprovision boolean DEFAULT false,
-    int_type character varying,
-    tcp_port integer
+    tcp_port integer,
+    integration_type character varying,
+    mac_addr_tel character varying(16) DEFAULT NULL::character varying
 );
 
 
