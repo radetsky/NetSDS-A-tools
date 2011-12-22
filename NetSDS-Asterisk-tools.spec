@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt6
+Release: alt7
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -23,6 +23,7 @@ Requires: perl-NetSDS-Asterisk
 Requires: perl-NetSDS
 Requires: perl-Data-UUID
 Requires: pwgen
+Requires: service
 Requires: perl-Getopt-Mixed
 
 %description
@@ -35,6 +36,7 @@ Some useful tools:
 %setup -n %origname-%version
 
 %build
+
 %install
 mkdir -p %buildroot/usr/share/doc/%origname
 mkdir -p %buildroot/usr/bin
@@ -43,7 +45,8 @@ mkdir -p %buildroot/usr/lib/asterisk/agi-bin
 mkdir -p %buildroot/etc/cron.daily
 mkdir -p %buildroot/etc/asterisk
 mkdir -p %buildroot/etc/NetSDS
-mkdir -p %buildroot/etc/init.d
+mkdir -p %buildroot%_initdir
+install -m750 etc/NetSDS-hangupd.init %buildroot%_initdir/NetSDS-hangupd
 install -m755 callback.sh %buildroot/usr/bin/
 install -m755 voicefiles.rotate.sh %buildroot/etc/cron.daily/
 install -m755 uuid.pl %buildroot/usr/lib/asterisk/agi-bin/
@@ -55,9 +58,14 @@ install -m644 NetSDS.ael %buildroot/usr/share/doc/%origname
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
 install -m755 sbin/NetSDS-hangupd.pl %buildroot/usr/sbin/
 install -m644 etc/NetSDS/asterisk-router.conf %buildroot/etc/NetSDS
-cp etc/NetSDS-hangupd.init %buildroot/etc/init.d/NetSDS-hangupd
 cp -ar dialplan %buildroot/usr/share/doc/%origname/
 cp -ar sql %buildroot/usr/share/doc/%origname
+
+%post
+%post_service NetSDS-hangupd
+
+%preun
+%preun_service NetSDS-hangupd
 
 %files
 /usr/bin/callback.sh
@@ -71,10 +79,13 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 /usr/share/doc/NetSDS-Asterisk-tools/*
 /usr/share/doc/NetSDS-Asterisk-tools/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
-/etc/init.d/NetSDS-hangupd
-/etc/NetSDS/asterisk-router.conf
+%_sysconfdir/NetSDS-hangupd
+%config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 
 %changelog
+* Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt7
+- Added service start-stop requirements
+
 * Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt6
 - Added perl-NetSDS-Asterisk into Requirements
 
