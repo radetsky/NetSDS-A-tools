@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt3
+Release: alt4
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -34,9 +34,12 @@ Some useful tools:
 %install
 mkdir -p %buildroot/usr/share/doc/%origname
 mkdir -p %buildroot/usr/bin
+mkdir -p %buildroot/usr/sbin
 mkdir -p %buildroot/usr/lib/asterisk/agi-bin
 mkdir -p %buildroot/etc/cron.daily
 mkdir -p %buildroot/etc/asterisk
+mkdir -p %buildroot/etc/NetSDS
+mkdir -p %buildroot/etc/init.d
 install -m755 callback.sh %buildroot/usr/bin/
 install -m755 voicefiles.rotate.sh %buildroot/etc/cron.daily/
 install -m755 uuid.pl %buildroot/usr/lib/asterisk/agi-bin/
@@ -46,6 +49,9 @@ install -m755 officepark.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 make_sip_conf.pl %buildroot/usr/bin/
 install -m644 NetSDS.ael %buildroot/usr/share/doc/%origname
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
+install -m755 sbin/NetSDS-hangupd.pl %buildroot/usr/sbin/
+install -m644 etc/NetSDS/asterisk-router.conf %buildroot/etc/NetSDS
+cp etc/NetSDS-hangupd.init %buildroot/etc/init.d/NetSDS-hangupd
 cp -ar dialplan %buildroot/usr/share/doc/%origname/
 cp -ar sql %buildroot/usr/share/doc/%origname
 
@@ -57,11 +63,17 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 /usr/lib/asterisk/agi-bin/confirm_call.sh
 /usr/lib/asterisk/agi-bin/officepark.pl
 /usr/bin/make_sip_conf.pl 
+/usr/sbin/NetSDS-hangupd.pl 
 /usr/share/doc/NetSDS-Asterisk-tools/*
 /usr/share/doc/NetSDS-Asterisk-tools/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
+/etc/init.d/NetSDS-hangupd
+/etc/NetSDS/asterisk-router.conf
 
 %changelog
+* Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt4
+- Added NetSDS-hangupd service and init script
+
 * Tue Dec 13 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt3
 - New dialplan and sql files
 
