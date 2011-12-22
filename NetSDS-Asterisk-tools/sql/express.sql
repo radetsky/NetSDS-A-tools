@@ -17,6 +17,11 @@ ALTER TABLE ONLY routing.route DROP CONSTRAINT route_route_direction_id_fkey;
 ALTER TABLE ONLY routing.permissions DROP CONSTRAINT fk_direction_in_dlist;
 ALTER TABLE ONLY routing.directions DROP CONSTRAINT dr_name;
 ALTER TABLE ONLY routing.callerid DROP CONSTRAINT callerid_direction_id_fkey;
+SET search_path = integration, pg_catalog;
+
+ALTER TABLE ONLY integration.workplaces DROP CONSTRAINT workplaces_sip_id_fkey;
+SET search_path = routing, pg_catalog;
+
 DROP TRIGGER route_check_dest_id ON routing.route;
 DROP INDEX routing.fki_tgrp_item_group;
 DROP INDEX routing.fki_tgrp_item_fk;
@@ -47,6 +52,7 @@ ALTER TABLE ONLY public.queue_members DROP CONSTRAINT queue_members_pkey;
 ALTER TABLE ONLY public.extensions_conf DROP CONSTRAINT extensions_conf_pkey;
 SET search_path = integration, pg_catalog;
 
+ALTER TABLE ONLY integration.workplaces DROP CONSTRAINT workplaces_pkey;
 ALTER TABLE ONLY integration.recordings DROP CONSTRAINT recordings_pkey;
 ALTER TABLE ONLY integration.ulines DROP CONSTRAINT "ULines_pkey";
 SET search_path = routing, pg_catalog;
@@ -76,6 +82,7 @@ ALTER TABLE public.extensions_conf ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE public.blacklist ALTER COLUMN id DROP DEFAULT;
 SET search_path = integration, pg_catalog;
 
+ALTER TABLE integration.workplaces ALTER COLUMN id DROP DEFAULT;
 ALTER TABLE integration.recordings ALTER COLUMN id DROP DEFAULT;
 SET search_path = routing, pg_catalog;
 
@@ -115,6 +122,8 @@ DROP SEQUENCE public.blacklist_id_seq;
 DROP TABLE public.blacklist;
 SET search_path = integration, pg_catalog;
 
+DROP SEQUENCE integration.workplaces_id_seq;
+DROP TABLE integration.workplaces;
 DROP TABLE integration.ulines;
 DROP SEQUENCE integration.recordings_id_seq;
 DROP TABLE integration.recordings;
@@ -875,6 +884,52 @@ CREATE TABLE ulines (
 
 
 ALTER TABLE integration.ulines OWNER TO asterisk;
+
+--
+-- Name: workplaces; Type: TABLE; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE workplaces (
+    id bigint NOT NULL,
+    sip_id bigint NOT NULL,
+    ip_addr_pc character varying,
+    ip_addr_tel character varying,
+    teletype character varying,
+    autoprovision boolean DEFAULT false,
+    int_type character varying,
+    tcp_port integer
+);
+
+
+ALTER TABLE integration.workplaces OWNER TO asterisk;
+
+--
+-- Name: workplaces_id_seq; Type: SEQUENCE; Schema: integration; Owner: asterisk
+--
+
+CREATE SEQUENCE workplaces_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE integration.workplaces_id_seq OWNER TO asterisk;
+
+--
+-- Name: workplaces_id_seq; Type: SEQUENCE OWNED BY; Schema: integration; Owner: asterisk
+--
+
+ALTER SEQUENCE workplaces_id_seq OWNED BY workplaces.id;
+
+
+--
+-- Name: workplaces_id_seq; Type: SEQUENCE SET; Schema: integration; Owner: asterisk
+--
+
+SELECT pg_catalog.setval('workplaces_id_seq', 1, true);
+
 
 SET search_path = public, pg_catalog;
 
@@ -1741,6 +1796,13 @@ SET search_path = integration, pg_catalog;
 ALTER TABLE recordings ALTER COLUMN id SET DEFAULT nextval('recordings_id_seq'::regclass);
 
 
+--
+-- Name: id; Type: DEFAULT; Schema: integration; Owner: asterisk
+--
+
+ALTER TABLE workplaces ALTER COLUMN id SET DEFAULT nextval('workplaces_id_seq'::regclass);
+
+
 SET search_path = public, pg_catalog;
 
 --
@@ -2083,6 +2145,15 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 \.
 
 
+--
+-- Data for Name: workplaces; Type: TABLE DATA; Schema: integration; Owner: asterisk
+--
+
+COPY workplaces (id, sip_id, ip_addr_pc, ip_addr_tel, teletype, autoprovision, int_type, tcp_port) FROM stdin;
+1	57	192.168.1.98	192.168.1.114	CiscoSPA502G	t	TaxiOffice	335
+\.
+
+
 SET search_path = public, pg_catalog;
 
 --
@@ -2289,7 +2360,7 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 4	gsm3	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 58	202	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N
-57	201	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1324409768	192.168.1.114		yes		1	9		sip:201@192.168.1.114:5060	\N	\N
+57	201	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1324488507	192.168.1.114		yes		1	6		sip:201@192.168.1.114:5060	\N	\N
 \.
 
 
@@ -2413,6 +2484,14 @@ ALTER TABLE ONLY ulines
 
 ALTER TABLE ONLY recordings
     ADD CONSTRAINT recordings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workplaces_pkey; Type: CONSTRAINT; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY workplaces
+    ADD CONSTRAINT workplaces_pkey PRIMARY KEY (id);
 
 
 SET search_path = public, pg_catalog;
@@ -2590,6 +2669,18 @@ CREATE INDEX fki_tgrp_item_group ON trunkgroup_items USING btree (tgrp_item_grou
 
 CREATE TRIGGER route_check_dest_id BEFORE INSERT OR UPDATE ON route FOR EACH ROW EXECUTE PROCEDURE route_test();
 
+
+SET search_path = integration, pg_catalog;
+
+--
+-- Name: workplaces_sip_id_fkey; Type: FK CONSTRAINT; Schema: integration; Owner: asterisk
+--
+
+ALTER TABLE ONLY workplaces
+    ADD CONSTRAINT workplaces_sip_id_fkey FOREIGN KEY (sip_id) REFERENCES public.sip_peers(id);
+
+
+SET search_path = routing, pg_catalog;
 
 --
 -- Name: callerid_direction_id_fkey; Type: FK CONSTRAINT; Schema: routing; Owner: asterisk

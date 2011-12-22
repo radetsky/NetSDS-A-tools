@@ -734,6 +734,45 @@ CREATE TABLE ulines (
 
 ALTER TABLE integration.ulines OWNER TO asterisk;
 
+--
+-- Name: workplaces; Type: TABLE; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE workplaces (
+    id bigint NOT NULL,
+    sip_id bigint NOT NULL,
+    ip_addr_pc character varying,
+    ip_addr_tel character varying,
+    teletype character varying,
+    autoprovision boolean DEFAULT false,
+    int_type character varying,
+    tcp_port integer
+);
+
+
+ALTER TABLE integration.workplaces OWNER TO asterisk;
+
+--
+-- Name: workplaces_id_seq; Type: SEQUENCE; Schema: integration; Owner: asterisk
+--
+
+CREATE SEQUENCE workplaces_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE integration.workplaces_id_seq OWNER TO asterisk;
+
+--
+-- Name: workplaces_id_seq; Type: SEQUENCE OWNED BY; Schema: integration; Owner: asterisk
+--
+
+ALTER SEQUENCE workplaces_id_seq OWNED BY workplaces.id;
+
+
 SET search_path = public, pg_catalog;
 
 --
@@ -1494,6 +1533,13 @@ SET search_path = integration, pg_catalog;
 ALTER TABLE recordings ALTER COLUMN id SET DEFAULT nextval('recordings_id_seq'::regclass);
 
 
+--
+-- Name: id; Type: DEFAULT; Schema: integration; Owner: asterisk
+--
+
+ALTER TABLE workplaces ALTER COLUMN id SET DEFAULT nextval('workplaces_id_seq'::regclass);
+
+
 SET search_path = public, pg_catalog;
 
 --
@@ -1619,6 +1665,14 @@ ALTER TABLE ONLY ulines
 
 ALTER TABLE ONLY recordings
     ADD CONSTRAINT recordings_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workplaces_pkey; Type: CONSTRAINT; Schema: integration; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY workplaces
+    ADD CONSTRAINT workplaces_pkey PRIMARY KEY (id);
 
 
 SET search_path = public, pg_catalog;
@@ -1796,6 +1850,18 @@ CREATE INDEX fki_tgrp_item_group ON trunkgroup_items USING btree (tgrp_item_grou
 
 CREATE TRIGGER route_check_dest_id BEFORE INSERT OR UPDATE ON route FOR EACH ROW EXECUTE PROCEDURE route_test();
 
+
+SET search_path = integration, pg_catalog;
+
+--
+-- Name: workplaces_sip_id_fkey; Type: FK CONSTRAINT; Schema: integration; Owner: asterisk
+--
+
+ALTER TABLE ONLY workplaces
+    ADD CONSTRAINT workplaces_sip_id_fkey FOREIGN KEY (sip_id) REFERENCES public.sip_peers(id);
+
+
+SET search_path = routing, pg_catalog;
 
 --
 -- Name: callerid_direction_id_fkey; Type: FK CONSTRAINT; Schema: routing; Owner: asterisk
