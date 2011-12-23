@@ -1,10 +1,11 @@
 #!/bin/sh
 
-ext=
-pass=
-name=
-model=
+EXT=
+PASS=
+NAME=
+MODEL=
 MAC=
+MODE="comandline"
 
 TFTPDIR="/var/lib/tftpboot"
 NTPSERVER="192.168.1.98"
@@ -12,24 +13,24 @@ SIPSERVER="192.168.1.98"
 PHONEBOOK="192.168.1.111"
 
 clear_vars(){
-    ext=
-    pass=
-    name=
-    model=
+    EXT=
+    PASS=
+    NAME=
+    MODEL=
     MAC=
 }
 
 generate_SPA502G_config() {
 cat > ${TFTPDIR}/SPA502G/${MAC}.xml <<EOF
 <flat-profile>
-  <User_ID_1_ group="Ext_1/Subscriber_Information">${ext}</User_ID_1_>
-  <Password_1_ group="Ext_1/Subscriber_Information">${pass}</Password_1_>
+  <User_ID_1_ group="Ext_1/Subscriber_Information">${EXT}</User_ID_1_>
+  <Password_1_ group="Ext_1/Subscriber_Information">${PASS}</Password_1_>
   <Use_Auth_ID_1_ group="Ext_1/Subscriber_Information">No</Use_Auth_ID_1_>
   <Auth_ID_1_ group="Ext_1/Subscriber_Information"></Auth_ID_1_>
-  <Display_Name_1_ group="Ext_1/Subscriber_Information">${name}</Display_Name_1_>
+  <Display_Name_1_ group="Ext_1/Subscriber_Information">${NAME}</Display_Name_1_>
   <Proxy_1_ group="Ext_1/Proxy_and_Registration">${SIPSERVER}</Proxy_1_>
-  <Station_Name group="Phone/General">${ext}</Station_Name>
-  <Station_Display_Name group="Phone/General">${name}</Station_Display_Name>
+  <Station_Name group="Phone/General">${EXT}</Station_Name>
+  <Station_Display_Name group="Phone/General">${NAME}</Station_Display_Name>
   <Voice_Mail_Number ua="rw"></Voice_Mail_Number>
   <Text_Logo group="Phone/General">Taxi Express</Text_Logo>
   <BMP_Picture_Download_URL group="Phone/General"></BMP_Picture_Download_URL>
@@ -54,19 +55,19 @@ P91 = 1
 # Account Active (In Use). 0 - no, 1 - yes
 P271 = 1
 # Account Name
-P270 = ${name}
+P270 = ${NAME}
 # SIP Server
 P47 = ${SIPSERVER}
 # Outbound Proxy
 P48 = ${SIPSERVER}
 # SIP User ID
-P35 = ${ext}
+P35 = ${EXT}
 # SIP Password
-P34 = ${pass}
+P34 = ${PASS}
 # Authenticate ID
-P36 = ${ext}
+P36 = ${EXT}
 # Display Name (John Doe)
-P3 = ${name}
+P3 = ${NAME}
 #--------------------------------------------------------------------------------------
 # End User Time settings
 #--------------------------------------------------------------------------------------
@@ -76,7 +77,7 @@ P64=840
 # Time Display Format. 0 - 12 Hour, 1 - 24 Hour
 P122 = 1
 # NTP Server
-P30 = ${ntpserver}
+P30 = ${NTPSERVER}
 # Enable Downloadable Phonebook (P330): NO/YES-HTTP/YES-TFTP
 # (default NO). Possible values 0 (NO)/1 (HTTP)/2 (TFTP), other values
 # ignored.
@@ -103,26 +104,84 @@ compile_GXP1200_config(){
     clear_vars
 }
 
-[ -d ${TFTPDIR} ] || mkdir -p ${TFTPDIR}
-[ -d ${TFTPDIR}/SPA502G ] || mkdir -p ${TFTPDIR}/SPA502G
-
+read_from_db(){
 psql -U asterisk -A -t -c 'select a.name,a.secret,a.callerid,b.teletype,b.mac_addr_tel from public.sip_peers a, integration.workplaces b where a.id=b.sip_id' | \
-while read str; do
+  while read str; do
     echo $str | tr "|" ":" |\
     while IFS=":" read Extn Upass Dname Model Mac; do
-	ext=$Extn
-	pass=$Upass
-	name=$(echo $Dname | awk '{print $1,$2}')
-	model=$Model
+	EXT=$Extn
+	PASS=$Upass
+	NAME=$(echo $Dname | awk '{print $1,$2}')
+	MODEL=$Model
 	MAC=$Mac
 	case 1 in 
-	    $(echo $model | grep -ic GXP1200 ) )
-		#generate_GXP1200_config ${ext} ${pass} ${MAC} ${model} ${name}
+	    $(echo $MODEL | grep -ic GXP1200 ) )
+		#generate_GXP1200_config ${EXT} ${PASS} ${MAC} ${MODEL} ${NAME}
 		generate_GXP1200_config
 		;;
-	    $(echo $model | grep -ic SPA502G ) )
+	    $(echo $MODEL | grep -ic SPA502G ) )
 		generate_SPA502G_config
 		;;
 	esac
     done
+ done
+}
+
+legend() {
+    cat <<EOF
+    Usage: $(basename $0) [options]
+      -h            print this screen
+      -m model      Phone model (Example: 502G)
+      -s SIP        SIP server IP address (Example: 192.168.1.82)
+      -e extension  SIP extension number (Example: 201)
+      -p password   SIP user password
+      -M Phone MAC  Phone MAC address (Example: e0:b9:a5:6a:ba:a1)
+      -I NotInteractive mode. Read from database. Without other args.
+
+Example: 
+# $(basename $0) -m SPA502G -s 192.168.1.92 -e 201 -p "SuperSecret" -M "f4:6d:04:0b:ee:0a"
+or
+# $(basename $0) -I
+
+EOF
+}
+
+getoptarg="hc:m:s:e:p:M:I"
+
+while getopts $getoptarg opt
+do
+    case $opt in
+        h) legend; exit 0;;
+        m) MODEL="$OPTARG";;
+        s) SIP="$OPTARG";;
+        e) EXT="$OPTARG";;
+        p) PASS="$OPTARG";;
+        M) MAC=$(echo "$OPTARG" | tr "[A-Z]" "[a-z]" | tr -d ":");;
+	I) MODE="auto"
+    esac
 done
+
+
+if [ "$MODE" = "auto" ];then
+    read_from_db
+else
+    if [ -z "${MAC}" -o -z "${EXT}" -o -z "${PASS}" -o -z "${SIP}" -o -z "${MODEL}" ]; then
+	legend
+	echo "Error: Missing one from required parameters."
+	exit 1
+    else
+	case 1 in 
+	    $(echo $MODEL | grep -ic GXP1200 ) )
+		[ -d ${TFTPDIR} ] || mkdir -p ${TFTPDIR}
+		generate_GXP1200_config
+		;;
+	    $(echo $MODEL | grep -ic SPA502G ) )
+		[ -d ${TFTPDIR}/SPA502G ] || mkdir -p ${TFTPDIR}/SPA502G
+		generate_SPA502G_config
+		;;
+	    * )
+	    echo "Unknown model. Tell about software autor"
+	    ;;
+	esac
+    fi
+fi
