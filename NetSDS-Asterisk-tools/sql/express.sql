@@ -866,7 +866,7 @@ ALTER SEQUENCE recordings_id_seq OWNED BY recordings.id;
 -- Name: recordings_id_seq; Type: SEQUENCE SET; Schema: integration; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('recordings_id_seq', 15, true);
+SELECT pg_catalog.setval('recordings_id_seq', 18, true);
 
 
 --
@@ -896,8 +896,9 @@ CREATE TABLE workplaces (
     ip_addr_tel character varying,
     teletype character varying,
     autoprovision boolean DEFAULT false,
-    int_type character varying,
-    tcp_port integer
+    tcp_port integer,
+    integration_type character varying,
+    mac_addr_tel character varying(16) DEFAULT NULL::character varying
 );
 
 
@@ -928,7 +929,7 @@ ALTER SEQUENCE workplaces_id_seq OWNED BY workplaces.id;
 -- Name: workplaces_id_seq; Type: SEQUENCE SET; Schema: integration; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('workplaces_id_seq', 1, true);
+SELECT pg_catalog.setval('workplaces_id_seq', 19, true);
 
 
 SET search_path = public, pg_catalog;
@@ -1131,7 +1132,7 @@ ALTER SEQUENCE queue_members_uniqueid_seq OWNED BY queue_members.uniqueid;
 -- Name: queue_members_uniqueid_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('queue_members_uniqueid_seq', 1, true);
+SELECT pg_catalog.setval('queue_members_uniqueid_seq', 21, true);
 
 
 --
@@ -1352,7 +1353,7 @@ ALTER SEQUENCE sip_peers_id_seq OWNED BY sip_peers.id;
 -- Name: sip_peers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('sip_peers_id_seq', 58, true);
+SELECT pg_catalog.setval('sip_peers_id_seq', 76, true);
 
 
 --
@@ -1934,6 +1935,9 @@ COPY recordings (id, uline_id, original_file, concatenated, result_file, previou
 13	29	2011/12/20/200417-1003.wav	f	\N	\N	\N
 14	1	2011/12/20/201433-1003.wav	f	\N	\N	\N
 15	1	2011/12/20/201447-1003.wav	f	\N	\N	\N
+16	1	2011/12/21/190827-1003.wav	f	\N	\N	\N
+17	2	2011/12/21/194212-1003.wav	f	\N	\N	\N
+18	3	2011/12/21/195705-1003.wav	f	\N	\N	\N
 \.
 
 
@@ -2085,7 +2089,9 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 64	free	\N	\N	\N	\N
 65	free	\N	\N	\N	\N
 66	free	\N	\N	\N	\N
-1	free	1003	2011-12-20 20:14:47	SIP/t_express-00000042	1324404887.87
+1	free	1003	2011-12-21 19:08:27	SIP/t_express-00000044	1324487307.89
+2	free	1003	2011-12-21 19:42:12	SIP/t_express-00000046	1324489332.91
+3	free	1003	2011-12-21 19:57:05	SIP/t_express-00000048	1324490225.93
 164	free	\N	\N	\N	\N
 165	free	\N	\N	\N	\N
 166	free	\N	\N	\N	\N
@@ -2123,8 +2129,6 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 198	free	\N	\N	\N	\N
 199	free	\N	\N	\N	\N
 200	free	\N	\N	\N	\N
-2	free	201	2011-12-17 14:05:26	SIP/201-0000000b	1324123526.14
-3	free	1003	2011-12-17 14:18:18	SIP/t_express-0000000c	1324124298.15
 4	free	201	2011-12-17 14:18:37	SIP/201-0000000e	1324124317.18
 5	free	1003	2011-12-17 14:23:29	SIP/t_express-0000000f	1324124609.19
 6	free	1003	2011-12-17 14:32:50	SIP/t_express-00000012	1324125170.23
@@ -2149,8 +2153,26 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 -- Data for Name: workplaces; Type: TABLE DATA; Schema: integration; Owner: asterisk
 --
 
-COPY workplaces (id, sip_id, ip_addr_pc, ip_addr_tel, teletype, autoprovision, int_type, tcp_port) FROM stdin;
-1	57	192.168.1.98	192.168.1.114	CiscoSPA502G	t	TaxiOffice	335
+COPY workplaces (id, sip_id, ip_addr_pc, ip_addr_tel, teletype, autoprovision, tcp_port, integration_type, mac_addr_tel) FROM stdin;
+1	57	192.168.1.98	192.168.1.114	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77a
+2	58	192.168.0.22	192.168.1.22	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77b
+3	59	192.168.0.23	192.168.1.23	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77c
+4	60	192.168.0.24	192.168.1.24	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77d
+5	61	192.168.0.25	192.168.1.25	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77f
+6	62	192.168.0.26	192.168.1.26	GrandStreamGXP1200	t	335	TaxiOffice	000b82226396
+7	63	192.168.0.27	192.168.1.27	GrandStreamGXP1200	t	335	TaxiOffice	000b82226397
+8	64	192.168.0.11	192.168.1.11	GrandStreamGXP1200	t	335	TaxiOffice	000b8217fd9b
+9	65	192.168.0.12	192.168.1.12	GrandStreamGXP1200	t	335	TaxiOffice	000b8217fd3b
+10	66	192.168.0.13	192.168.1.13	GrandStreamGXP1200	t	335	TaxiOffice	000b8217fd99
+11	67	192.168.0.16	192.168.1.16	GrandStreamGXP1200	t	335	TaxiOffice	000b82226394
+12	68	192.168.0.17	192.168.1.17	GrandStreamGXP1200	t	335	TaxiOffice	000b82226395
+13	69	192.168.0.14	192.168.1.14	GrandStreamGXP1200	t	335	TaxiOffice	000b8217fd9c
+14	70	192.168.0.15	192.168.1.15	GrandStreamGXP1200	t	335	TaxiOffice	000b8217fd9a
+15	71	192.168.0.16	192.168.1.16	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d733
+16	72	192.168.0.17	192.168.1.17	GrandStreamGXP1200	t	335	TaxiOffice	000b8217fd9e
+17	73	192.168.0.28	192.168.1.28	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d737
+18	74	192.168.0.29	192.168.1.29	GrandStreamGXP1200	t	335	TaxiOffice	000b821a40a3
+19	75	192.168.0.30	192.168.1.30	GrandStreamGXP1200	t	335	TaxiOffice	000b8227c189
 \.
 
 
@@ -2222,6 +2244,9 @@ COPY cdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, last
 2011-12-15 18:25:37+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000040	SIP/201-00000041	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	51	49	ANSWERED	3		1323966337.64	
 2011-12-15 18:27:01+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000046	SIP/201-00000047	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	22	19	ANSWERED	3		1323966421.70	
 2011-12-20 20:14:47+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000042	SIP/201-00000043	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	68	66	ANSWERED	3		1324404887.87	
+2011-12-21 19:08:27+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000044	SIP/201-00000045	Queue	express|rtTn|15|NetSDS-AGI-integration.pl	74	69	ANSWERED	3		1324487307.89	
+2011-12-21 19:42:12+02	"LINE 2" <1003>	1003	2391515	express	SIP/t_express-00000046	SIP/201-00000047	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	107	100	ANSWERED	3		1324489332.91	
+2011-12-21 19:57:05+02	"LINE 3" <1003>	1003	2391515	express	SIP/t_express-00000048	SIP/201-00000049	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	33	25	ANSWERED	3		1324490225.93	
 2011-12-15 18:48:33+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000000	SIP/201-00000001	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	23	21	ANSWERED	3		1323967713.0	
 2011-12-15 19:39:42+02	"Im Phone" <201>	201	0	default	SIP/201-00000000		Park	10	10	10	ANSWERED	3		1323970782.0	
 2011-12-15 19:41:26+02	"Im Phone" <201>	201	0	default	SIP/201-00000001		Park		36	36	ANSWERED	3		1323970886.2	
@@ -2288,11 +2313,11 @@ COPY cdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, last
 
 COPY extensions_conf (id, context, exten, priority, app, appdata) FROM stdin;
 3	default	_X!	3	Hangup	17
-4	express	_X!	1	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl
 6	parkingslot	_X!	1	NoOp	see extensions.conf
 5	express	h	1	NoOp	EOCall: ${CALLERID(num)} ${CDR(start)}
 2	default	_X!	2	AGI	NetSDS-route.pl|${CHANNEL}|${EXTEN}
 1	default	_X!	1	NoOp	
+4	express	_X!	1	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl
 \.
 
 
@@ -2310,6 +2335,25 @@ COPY queue_log (id, callid, queuename, agent, event, data, "time") FROM stdin;
 
 COPY queue_members (uniqueid, membername, queue_name, interface, penalty, paused) FROM stdin;
 1	201	express	SIP/201	\N	\N
+2	202	express	SIP/202	\N	\N
+3	203	express	SIP/203	\N	\N
+4	204	express	SIP/204	\N	\N
+5	205	express	SIP/205	\N	\N
+6	206	express	SIP/206	\N	\N
+7	207	express	SIP/207	\N	\N
+8	208	autoexpress	SIP/208	\N	\N
+9	209	autoexpress	SIP/209	\N	\N
+10	210	autoexpress	SIP/210	\N	\N
+11	211	autoexpress	SIP/211	\N	\N
+12	212	autoexpress	SIP/212	\N	\N
+13	213	evakuator	SIP/213	\N	\N
+14	214	evakuator	SIP/214	\N	\N
+15	215	evakuator	SIP/215	\N	\N
+17	216	evakuator	SIP/216	\N	\N
+18	216	leader	SIP/216	\N	\N
+19	217	leader	SIP/217	\N	\N
+20	218	leader	SIP/218	\N	\N
+21	219	miniexpress	SIP/219	\N	\N
 \.
 
 
@@ -2327,6 +2371,10 @@ COPY queue_parsed (id, callid, queue, "time", callerid, agentid, status, success
 
 COPY queues (name, musiconhold, announce, context, timeout, monitor_format, queue_youarenext, queue_thereare, queue_callswaiting, queue_holdtime, queue_minutes, queue_seconds, queue_lessthan, queue_thankyou, queue_reporthold, retry, wrapuptime, maxlen, servicelevel, strategy, joinempty, leavewhenempty, eventmemberstatus, eventwhencalled, reportholdtime, memberdelay, weight, timeoutrestart, periodic_announce, periodic_announce_frequency, ringinuse, setinterfacevar, "monitor-type") FROM stdin;
 express	default	\N	\N	0		\N	\N	\N	\N	\N	\N	\N	\N	\N	2	30	10	0	ringall	no	yes	t	t	f	0	0	f	\N	\N	f	t	mixmonitor
+autoexpress	default	\N	\N	0		\N	\N	\N	\N	\N	\N	\N	\N	\N	2	30	10	0	ringall	no	yes	t	t	f	0	0	f	\N	\N	f	t	mixmonitor
+miniexpress	default	\N	\N	0		\N	\N	\N	\N	\N	\N	\N	\N	\N	2	30	10	0	ringall	no	yes	t	t	f	0	0	f	\N	\N	f	t	mixmonitor
+evakuator	default	\N	\N	0		\N	\N	\N	\N	\N	\N	\N	\N	\N	2	30	10	0	ringall	no	yes	t	t	f	0	0	f	\N	\N	f	t	mixmonitor
+leader	default	\N	\N	0		\N	\N	\N	\N	\N	\N	\N	\N	\N	2	30	10	0	ringall	no	yes	t	t	f	0	0	f	\N	\N	f	t	mixmonitor
 \.
 
 
@@ -2359,8 +2407,26 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 3	gsm2	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 4	gsm3	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-58	202	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N
-57	201	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1324488507	192.168.1.114		yes		1	6		sip:201@192.168.1.114:5060	\N	\N
+58	202	\N	\N	\N	Express 2 <202>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N
+72	216	\N	\N	\N	Evakuator 4 <216>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+73	217	\N	\N	\N	Leader 1 <217>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+74	218	\N	\N	\N	Leader 2 <218>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+75	219	\N	\N	\N	Mini 1 <219>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+76	220	\N	\N	\N	Unused <220>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1324586931	192.168.1.114		yes		1	8		sip:201@192.168.1.114:5060	\N	\N
+59	203	\N	\N	\N	Express 3 <203>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+60	204	\N	\N	\N	Express 4 <204>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+61	205	\N	\N	\N	Express 5 <205>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+62	206	\N	\N	\N	Express 6 <206>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+63	207	\N	\N	\N	Express 7 <207>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+64	208	\N	\N	\N	Auto 1 <208>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+65	209	\N	\N	\N	Auto 2 <209>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+66	210	\N	\N	\N	Auto 3 <210>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+67	211	\N	\N	\N	Auto 4 <211>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+68	212	\N	\N	\N	Auto 5 <212>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+69	213	\N	\N	\N	Evakuator 1 <213>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+70	214	\N	\N	\N	Evakuator 2 <214>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+71	215	\N	\N	\N	Evakuator 3 <215>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 \.
 
 
