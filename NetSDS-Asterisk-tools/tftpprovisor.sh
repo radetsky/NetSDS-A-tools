@@ -21,6 +21,9 @@ clear_vars(){
 }
 
 generate_SPA502G_config() {
+
+[ -d ${TFTPDIR}/SPA502G ] || mkdir -p ${TFTPDIR}/SPA502G
+
 cat > ${TFTPDIR}/SPA502G/${MAC}.xml <<EOF
 <flat-profile>
   <User_ID_1_ group="Ext_1/Subscriber_Information">${EXT}</User_ID_1_>
@@ -47,6 +50,8 @@ clear_vars
 }
 
 generate_GXP1200_config(){
+[ -d ${TFTPDIR} ] || mkdir -p ${TFTPDIR}
+
 cat > ${TFTPDIR}/cfg${MAC}.txt <<EOF
 #--------------------------------------------------------------------------------------
 # Primary Account (Account 1) Settings
@@ -99,7 +104,7 @@ compile_GXP1200_config ${MAC}
 
 compile_GXP1200_config(){
     /usr/local/bin/grandstream-config.pl ${MAC} ${TFTPDIR}/cfg${MAC}.txt ${TFTPDIR}/cfg${MAC}
-    #rm -rf ${TFTPDIR}/cfg${MAC}.txt
+    rm -rf ${TFTPDIR}/cfg${MAC}.txt
     chmod 777 ${TFTPDIR}/cfg${MAC}
     clear_vars
 }
@@ -116,7 +121,6 @@ psql -U asterisk -A -t -c 'select a.name,a.secret,a.callerid,b.teletype,b.mac_ad
 	MAC=$Mac
 	case 1 in 
 	    $(echo $MODEL | grep -ic GXP1200 ) )
-		#generate_GXP1200_config ${EXT} ${PASS} ${MAC} ${MODEL} ${NAME}
 		generate_GXP1200_config
 		;;
 	    $(echo $MODEL | grep -ic SPA502G ) )
@@ -172,11 +176,10 @@ else
     else
 	case 1 in 
 	    $(echo $MODEL | grep -ic GXP1200 ) )
-		[ -d ${TFTPDIR} ] || mkdir -p ${TFTPDIR}
 		generate_GXP1200_config
 		;;
 	    $(echo $MODEL | grep -ic SPA502G ) )
-		[ -d ${TFTPDIR}/SPA502G ] || mkdir -p ${TFTPDIR}/SPA502G
+		
 		generate_SPA502G_config
 		;;
 	    * )
