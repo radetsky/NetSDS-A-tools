@@ -111,8 +111,46 @@ sub _get_memberinterface {
 
 }
 
+sub _begin {
+    my $this = shift;
+
+    eval { $this->dbh->begin_work; };
+
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+}
+
+sub _find_sipid_by_name { 
+	my $this = shift; 
+	my $sip_name = shift; 
+
+	$this->_begin; 
+
+	my $sth = $this->dbh->prepare ("select id,ipaddr from public.sip_peers where name=? order by id asc limit 1");
+    eval { 
+		my $rv = $sth->execute ($sip_name); 
+	}; 
+	if ($@) { 
+		$this->_exit ( $this->dbh->errstr); 
+	} 
+	my $result = $sth->fetchrow_hashref; 
+	unless ( defined ( $result ) ) { 
+		$this->_exit("CAN'T FIND SIP/$sip_name");
+	}
+
+	my $id = $result->{'id'}; 
+	my $ipaddr = $result->{'ipaddr'}; 
+	
+	$this->dbh->commit; 
+	return ($id, $ipaddr); 
+
+}
+
 sub process { 
 	my $this = shift; 
+
+# Get member interface 
 
 	my $memberinterface = $this->_get_memberinterface; 
 	unless ( defined ( $memberinterface ) ) { 
@@ -120,6 +158,16 @@ sub process {
 	}
 	$this->log("info","Member interface: $memberinterface");
 	$this->agi->verbose("Member interface: $memberinterface",3);
+
+	$memberinterface =~ /^SIP\/(.*)$/; 
+	my $sip_name = $1; 
+
+# Get SIP ID + addr
+
+	my ($sip_id, $sip_addr) = $this->_find_sipid_by_name ($sip_name); 
+	
+# GET Computer integration info 
+
 
 }
 
