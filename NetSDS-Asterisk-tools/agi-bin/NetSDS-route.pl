@@ -188,6 +188,13 @@ sub _get_callerid {
     my $result   = $sth->fetchrow_hashref;
     my $callerid = $result->{'get_callerid'};
     if ( $callerid ne '' ) {
+
+		if ($callerid =~ /^NAME$/i ) {
+			$this->agi->verbose("CHANGING NUM TO NAME.",3);
+			$this->log("info","CHANGING NUM TO NAME.");
+			$callerid = $this->agi->get_variable("CALLERID(name)");
+		}
+
         $this->agi->verbose(
 "$peername have to set CallerID to \'$callerid\' while calling to $exten",
             3
