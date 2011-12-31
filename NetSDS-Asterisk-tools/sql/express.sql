@@ -834,7 +834,7 @@ CREATE TABLE recordings (
     original_file character varying,
     concatenated boolean DEFAULT false,
     result_file character varying,
-    previous_record bigint,
+    previous_record bigint DEFAULT 0,
     next_record bigint
 );
 
@@ -866,7 +866,7 @@ ALTER SEQUENCE recordings_id_seq OWNED BY recordings.id;
 -- Name: recordings_id_seq; Type: SEQUENCE SET; Schema: integration; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('recordings_id_seq', 18, true);
+SELECT pg_catalog.setval('recordings_id_seq', 66, true);
 
 
 --
@@ -1926,8 +1926,6 @@ COPY recordings (id, uline_id, original_file, concatenated, result_file, previou
 4	21	2011/12/17/195816-1003.wav	f	\N	\N	\N
 5	22	2011/12/17/200255-1003.wav	f	\N	\N	\N
 6	23	2011/12/17/200546-1003.wav	f	\N	\N	\N
-7	24	2011/12/17/200733-1003.wav	f	\N	\N	\N
-8	25	2011/12/17/200752-201.wav	f	\N	\N	\N
 10	26	2011/12/17/201211-1003.wav	f	\N	9	\N
 9	26	2011/12/17/201210-1003.wav	f	\N	\N	10
 11	27	2011/12/17/201301-201.wav	f	\N	\N	\N
@@ -1938,6 +1936,56 @@ COPY recordings (id, uline_id, original_file, concatenated, result_file, previou
 16	1	2011/12/21/190827-1003.wav	f	\N	\N	\N
 17	2	2011/12/21/194212-1003.wav	f	\N	\N	\N
 18	3	2011/12/21/195705-1003.wav	f	\N	\N	\N
+19	1	2011/12/29/115138-1003.wav	f	\N	\N	\N
+20	1	2011/12/29/115231-1003.wav	f	\N	\N	\N
+21	1	2011/12/31/123337-1003.wav	f	\N	\N	22
+23	2	2011/12/31/123411-201.wav	f	\N	\N	\N
+22	1	2011/12/31/123337-1003.wav	f	\N	21	24
+25	3	2011/12/31/123446-201.wav	f	\N	\N	\N
+26	1	2011/12/31/123446-201.wav	f	\N	24	\N
+24	1	2011/12/31/123411-201.wav	f	\N	22	26
+27	1	2011/12/31/123809-1003.wav	f	\N	\N	\N
+28	1	2011/12/31/123909-1003.wav	f	\N	\N	\N
+29	1	2011/12/31/124821-1003.wav	f	\N	\N	\N
+30	1	2011/12/31/125112-1003.wav	f	\N	\N	\N
+31	1	2011/12/31/125140-1003.wav	f	\N	\N	\N
+32	1	2011/12/31/125146-1003.wav	f	\N	\N	\N
+33	1	2011/12/31/125149-1003.wav	f	\N	\N	\N
+34	1	2011/12/31/125153-1003.wav	f	\N	\N	\N
+35	1	2011/12/31/125156-1003.wav	f	\N	\N	36
+37	2	2011/12/31/125256-201.wav	f	\N	\N	\N
+36	1	2011/12/31/125157-1003.wav	f	\N	35	38
+39	2	2011/12/31/125326-201.wav	f	\N	\N	\N
+38	1	2011/12/31/125256-201.wav	f	\N	36	40
+40	1	2011/12/31/125326-201.wav	f	\N	38	0
+41	1	2011/12/31/134007-201.wav	f	\N	\N	\N
+42	1	2011/12/31/140505-201.wav	f	\N	\N	\N
+43	1	2011/12/31/140550-201.wav	f	\N	\N	0
+44	1	2011/12/31/140639-1003.wav	f	\N	\N	45
+45	1	2011/12/31/140639-1003.wav	f	\N	44	47
+46	2	2011/12/31/140714-201.wav	f	\N	\N	0
+47	1	2011/12/31/140714-201.wav	f	\N	45	49
+49	1	2011/12/31/140731-201.wav	f	\N	47	0
+48	2	2011/12/31/140731-201.wav	f	\N	\N	0
+50	1	2011/12/31/141601-1003.wav	f	\N	0	0
+51	1	2011/12/31/142102-1003.wav	f	\N	0	0
+52	1	2011/12/31/142241-1003.wav	f	\N	0	0
+53	1	2011/12/31/142511-1003.wav	f	\N	0	0
+54	1	2011/12/31/144310-1003.wav	f	\N	0	0
+55	1	2011/12/31/144411-1003.wav	f	\N	0	0
+56	1	2011/12/31/144558-1003.wav	f	\N	0	0
+57	1	2011/12/31/145204-1003.wav	f	\N	0	0
+58	1	2011/12/31/145305-1003.wav	f	\N	0	0
+59	1	2011/12/31/145416-1003.wav	f	\N	0	0
+60	1	2011/12/31/145452-1003.wav	f	\N	0	0
+61	1	2011/12/31/145509-1003.wav	f	\N	0	62
+63	2	2011/12/31/145525-201.wav	f	\N	0	\N
+62	1	2011/12/31/145509-1003.wav	f	\N	61	64
+8	25	2011/12/17/200752-201.wav	f	\N	\N	0
+66	1	2011/12/31/145535-201.wav	f	\N	64	\N
+64	1	2011/12/31/145525-201.wav	f	\N	62	66
+7	24	2011/12/17/200733-1003.wav	f	\N	\N	0
+65	3	2011/12/31/145535-201.wav	f	\N	0	0
 \.
 
 
@@ -2067,12 +2115,12 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 49	free	\N	\N	\N	\N
 50	free	\N	\N	\N	\N
 23	free	1003	2011-12-17 20:05:46	SIP/t_express-00000031	1324145146.66
-24	free	1003	2011-12-17 20:07:33	SIP/t_express-00000033	1324145253.68
-25	free	201	2011-12-17 20:07:52	SIP/201-00000035	1324145272.71
 26	free	1003	2011-12-17 20:12:10	SIP/t_express-00000036	1324145530.72
 27	free	201	2011-12-17 20:13:01	SIP/201-00000038	1324145581.75
 28	free	201	2011-12-17 20:13:30	SIP/201-00000039	1324145610.78
 29	free	1003	2011-12-20 20:04:17	SIP/t_express-0000003e	1324404257.83
+25	free	201	2011-12-17 20:07:52	SIP/201-00000035	1324145272.71
+24	free	1003	2011-12-17 20:07:33	SIP/t_express-00000033	1324145253.68
 51	free	\N	\N	\N	\N
 52	free	\N	\N	\N	\N
 53	free	\N	\N	\N	\N
@@ -2089,9 +2137,10 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 64	free	\N	\N	\N	\N
 65	free	\N	\N	\N	\N
 66	free	\N	\N	\N	\N
-1	free	1003	2011-12-21 19:08:27	SIP/t_express-00000044	1324487307.89
-2	free	1003	2011-12-21 19:42:12	SIP/t_express-00000046	1324489332.91
-3	free	1003	2011-12-21 19:57:05	SIP/t_express-00000048	1324490225.93
+7	free	1003	2011-12-17 14:37:44	SIP/t_express-00000015	1324125464.27
+1	busy	1003	2011-12-31 14:55:09	SIP/t_express-00000033	1325336109.60
+2	busy	201	2011-12-31 14:55:25	SIP/201-00000035	1325336125.63
+3	free	201	2011-12-31 14:55:35	SIP/201-00000036	1325336135.66
 164	free	\N	\N	\N	\N
 165	free	\N	\N	\N	\N
 166	free	\N	\N	\N	\N
@@ -2129,20 +2178,19 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 198	free	\N	\N	\N	\N
 199	free	\N	\N	\N	\N
 200	free	\N	\N	\N	\N
+13	free	201	2011-12-17 15:45:37	SIP/201-00000023	1324129537.46
+15	free	201	2011-12-17 15:45:57	SIP/201-00000025	1324129557.50
+17	free	201	2011-12-17 15:46:27	SIP/201-00000027	1324129587.56
 4	free	201	2011-12-17 14:18:37	SIP/201-0000000e	1324124317.18
 5	free	1003	2011-12-17 14:23:29	SIP/t_express-0000000f	1324124609.19
 6	free	1003	2011-12-17 14:32:50	SIP/t_express-00000012	1324125170.23
-7	free	1003	2011-12-17 14:37:44	SIP/t_express-00000015	1324125464.27
 8	free	1003	2011-12-17 14:56:47	SIP/t_express-00000018	1324126607.31
 9	free	1003	2011-12-17 15:35:18	SIP/t_express-0000001b	1324128918.35
 10	free	1003	2011-12-17 15:38:25	SIP/t_express-0000001e	1324129105.39
 11	free	201	2011-12-17 15:38:36	SIP/201-00000020	1324129116.42
 12	free	1003	2011-12-17 15:45:16	SIP/t_express-00000021	1324129516.43
-13	free	201	2011-12-17 15:45:37	SIP/201-00000023	1324129537.46
 14	free	201	2011-12-17 15:45:48	SIP/201-00000024	1324129548.49
-15	free	201	2011-12-17 15:45:57	SIP/201-00000025	1324129557.50
 16	free	201	2011-12-17 15:46:16	SIP/201-00000026	1324129576.53
-17	free	201	2011-12-17 15:46:27	SIP/201-00000027	1324129587.56
 18	free	1003	2011-12-17 19:54:49	SIP/t_express-00000028	1324144489.57
 19	free	1003	2011-12-17 19:55:48	SIP/t_express-0000002a	1324144548.59
 20	free	201	2011-12-17 19:56:10	SIP/201-0000002c	1324144570.61
@@ -2154,7 +2202,6 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 --
 
 COPY workplaces (id, sip_id, ip_addr_pc, ip_addr_tel, teletype, autoprovision, tcp_port, integration_type, mac_addr_tel) FROM stdin;
-1	57	192.168.1.98	192.168.1.114	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77a
 2	58	192.168.0.22	192.168.1.22	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77b
 3	59	192.168.0.23	192.168.1.23	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77c
 4	60	192.168.0.24	192.168.1.24	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77d
@@ -2173,6 +2220,7 @@ COPY workplaces (id, sip_id, ip_addr_pc, ip_addr_tel, teletype, autoprovision, t
 17	73	192.168.0.28	192.168.1.28	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d737
 18	74	192.168.0.29	192.168.1.29	GrandStreamGXP1200	t	335	TaxiOffice	000b821a40a3
 19	75	192.168.0.30	192.168.1.30	GrandStreamGXP1200	t	335	TaxiOffice	000b8227c189
+1	57	192.168.1.98	192.168.1.114	GrandStreamGXP1200	t	335	TaxiOffice	000b8221d77a
 \.
 
 
@@ -2247,7 +2295,20 @@ COPY cdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, last
 2011-12-21 19:08:27+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000044	SIP/201-00000045	Queue	express|rtTn|15|NetSDS-AGI-integration.pl	74	69	ANSWERED	3		1324487307.89	
 2011-12-21 19:42:12+02	"LINE 2" <1003>	1003	2391515	express	SIP/t_express-00000046	SIP/201-00000047	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	107	100	ANSWERED	3		1324489332.91	
 2011-12-21 19:57:05+02	"LINE 3" <1003>	1003	2391515	express	SIP/t_express-00000048	SIP/201-00000049	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	33	25	ANSWERED	3		1324490225.93	
+2011-12-29 11:51:38+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-0000004a	SIP/201-0000004b	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	52	48	ANSWERED	3		1325152298.95	
 2011-12-15 18:48:33+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000000	SIP/201-00000001	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	23	21	ANSWERED	3		1323967713.0	
+2011-12-31 12:33:37+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000000	SIP/201-00000001	AGI	VERBOSE	19	17	ANSWERED	3		1325327617.0	
+2011-12-31 12:34:11+02	"LINE 2" <201>	201	1	parkingslot	SIP/201-00000002	SIP/t_express-00000000	ParkedCall	1	25	25	ANSWERED	3		1325327651.3	
+2011-12-31 12:34:46+02	"LINE 3" <201>	201	1	parkingslot	SIP/201-00000003	SIP/t_express-00000000	ParkedCall	1	11	11	ANSWERED	3		1325327686.6	
+2011-12-31 12:38:09+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000004	SIP/201-00000005	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	26	23	ANSWERED	3		1325327889.7	
+2011-12-31 12:39:09+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000006	SIP/201-00000007	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	7	4	ANSWERED	3		1325327949.9	
+2011-12-31 12:48:21+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000008	SIP/201-00000009	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	57	47	ANSWERED	3		1325328501.11	
+2011-12-31 12:51:12+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-0000000a	SIP/201-0000000b	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	13	10	ANSWERED	3		1325328672.13	
+2011-12-31 12:51:56+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000010	SIP/201-00000011	AGI	VERBOSE	18	15	ANSWERED	3		1325328716.19	
+2011-12-31 12:52:56+02	"LINE 2" <201>	201	1	parkingslot	SIP/201-00000012	SIP/t_express-00000010	ParkedCall	1	12	12	ANSWERED	3		1325328776.22	
+2011-12-31 12:53:26+02	"LINE 2" <201>	201	1	parkingslot	SIP/201-00000013	SIP/t_express-00000010	ParkedCall	1	9	9	ANSWERED	3		1325328806.25	
+2011-12-31 13:40:07+02	"LINE 1" <201>	201	3039338	default	SIP/201-00000014	SIP/t_express-00000015	Dial	SIP/t_express/3039338|120|rtTg	6	6	ANSWERED	3		1325331607.26	
+2011-12-31 14:05:05+02	"LINE 1" <201>	201	3039338	default	SIP/201-00000016	SIP/t_express-00000017	Dial	SIP/t_express/3039338|120|rtTg	4	3	ANSWERED	3		1325333105.28	
 2011-12-15 19:39:42+02	"Im Phone" <201>	201	0	default	SIP/201-00000000		Park	10	10	10	ANSWERED	3		1323970782.0	
 2011-12-15 19:41:26+02	"Im Phone" <201>	201	0	default	SIP/201-00000001		Park		36	36	ANSWERED	3		1323970886.2	
 2011-12-15 19:47:18+02	"Im Phone" <201>	201	0	default	SIP/201-00000004		Park		11	10	ANSWERED	3		1323971238.6	
@@ -2285,8 +2346,25 @@ COPY cdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, last
 2011-12-15 21:02:44+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000034	SIP/201-00000035	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	34	32	ANSWERED	3		1323975764.77	
 2011-12-15 21:03:05+02	"Im Phone" <201>	201	0	default	SIP/201-00000037		Park		13	13	ANSWERED	3		1323975785.81	
 2011-12-16 17:07:37+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-0000003e	SIP/201-0000003f	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	9	1	ANSWERED	3		1324048057.89	
+2011-12-31 14:05:50+02	"LINE 1" <201>	201	3039338	default	SIP/201-00000018	SIP/t_express-00000019	Dial	SIP/t_express/3039338|120|rtTg	5	4	ANSWERED	3		1325333150.30	
+2011-12-31 14:06:39+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-0000001a	SIP/201-0000001b	AGI	VERBOSE	16	14	ANSWERED	3		1325333199.32	
+2011-12-31 14:07:14+02	"LINE 2" <201>	201	1	parkingslot	SIP/201-0000001c	SIP/t_express-0000001a	ParkedCall	1	7	6	ANSWERED	3		1325333234.35	
+2011-12-31 14:07:31+02	"LINE 2" <201>	201	1	parkingslot	SIP/201-0000001d	SIP/t_express-0000001a	ParkedCall	1	4	4	ANSWERED	3		1325333251.38	
+2011-12-31 14:16:01+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-0000001e	SIP/201-0000001f	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	31	29	ANSWERED	3		1325333761.39	
 2011-12-16 17:28:07+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000048	SIP/201-00000049	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	15	13	ANSWERED	3		1324049287.99	
 2011-12-16 17:28:22+02	"Alex Radetsky" <1003>	1003	SIP/201	park-dial	SIP/t_express-00000048	SIP/201-0000004b	Dial	SIP/201|30|Tt	111	63	ANSWERED	3		1324049287.99	
+2011-12-31 14:21:02+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000020	SIP/201-00000021	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	19	18	ANSWERED	3		1325334062.41	
+2011-12-31 14:22:41+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000022	SIP/201-00000023	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	18	16	ANSWERED	3		1325334161.43	
+2011-12-31 14:25:11+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000024	SIP/201-00000025	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	6	3	ANSWERED	3		1325334311.45	
+2011-12-31 14:43:10+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000026	SIP/201-00000027	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	19	15	ANSWERED	3		1325335390.47	
+2011-12-31 14:44:11+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000028	SIP/201-00000029	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	13	11	ANSWERED	3		1325335451.49	
+2011-12-31 14:45:58+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-0000002a	SIP/201-0000002b	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	6	4	ANSWERED	3		1325335558.51	
+2011-12-31 14:52:04+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-0000002c	SIP/201-0000002d	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	11	9	ANSWERED	3		1325335924.53	
+2011-12-31 14:53:05+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-0000002e	SIP/201-0000002f	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	21	20	ANSWERED	3		1325335985.55	
+2011-12-31 14:54:16+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000030	SIP/201-00000031	Queue	express|rtTn|||15|NetSDS-AGI-integration.pl	13	11	ANSWERED	3		1325336056.57	
+2011-12-31 14:55:09+02	"LINE 1" <1003>	1003	2391515	express	SIP/t_express-00000033	SIP/201-00000034	AGI	VERBOSE	8	6	ANSWERED	3		1325336109.60	
+2011-12-31 14:55:25+02	"LINE 2" <201>	201	1	parkingslot	SIP/201-00000035	SIP/t_express-00000033	ParkedCall	1	4	4	ANSWERED	3		1325336125.63	
+2011-12-31 14:55:35+02	"LINE 3" <201>	201	1	parkingslot	SIP/201-00000036	SIP/t_express-00000033	ParkedCall	1	4	3	ANSWERED	3		1325336135.66	
 2011-12-16 20:32:36+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000000	SIP/201-00000001	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	8	6	ANSWERED	3		1324060356.0	
 2011-12-16 20:32:44+02	"Alex Radetsky" <1003>	1003	SIP/201	park-dial	SIP/t_express-00000000	SIP/201-00000002	Dial	SIP/201|30|Tt	56	9	ANSWERED	3		1324060356.0	
 2011-12-16 20:38:23+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000005	SIP/201-00000006	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	7	5	ANSWERED	3		1324060703.6	
@@ -2413,7 +2491,6 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 74	218	\N	\N	\N	Leader 2 <218>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 75	219	\N	\N	\N	Mini 1 <219>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 76	220	\N	\N	\N	Unused <220>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1324586931	192.168.1.114		yes		1	8		sip:201@192.168.1.114:5060	\N	\N
 59	203	\N	\N	\N	Express 3 <203>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 60	204	\N	\N	\N	Express 4 <204>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 61	205	\N	\N	\N	Express 5 <205>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
@@ -2427,6 +2504,7 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 69	213	\N	\N	\N	Evakuator 1 <213>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 70	214	\N	\N	\N	Evakuator 2 <214>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 71	215	\N	\N	\N	Evakuator 3 <215>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1325337765	192.168.1.114		yes		1	9		sip:201@192.168.1.114:5060	\N	\N
 \.
 
 

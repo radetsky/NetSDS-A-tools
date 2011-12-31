@@ -29,7 +29,7 @@ Integration->run(
     daemon      => undef,
     use_pidfile => undef,
     verbose     => undef,
-    debug       => undef,
+    debug       => 1,
     infinite    => undef
 );
 
@@ -40,6 +40,7 @@ package Integration;
 use base qw(NetSDS::App);
 use Data::Dumper;
 use Asterisk::AGI;
+use IO::Socket::INET; 
 
 sub start {
     my $this = shift;
@@ -194,23 +195,34 @@ sub _open_blank_taxi_office {
     my $this  = shift;
     my $iinfo = shift;
 
-    my $socket = IO::Socket::INET->new(
+	if ( $this->{'debug'} ) {
+		$this->log("info","Start TaxiOffice open blank");
+	}
+
+    my $socket = IO::Socket::INET->new (
         PeerAddr => $iinfo->{'ip_addr_pc'},
-        PeerPort => $iinfo->{'port'},
+        PeerPort => $iinfo->{'tcp_port'},
         Proto    => "tcp",
         Timeout  => 1
     );
 
+	$this->log("info", Dumper ($socket)); 
+
     unless ($socket) {
         $this->_exit( "CAN'T CONNECT TO "
               . $iinfo->{'ip_addr_pc'} . ":"
-              . $iinfo->{'port'} );
+              . $iinfo->{'tcp_port'} );
     }
 
+	if ( $this->{'debug'} ) { 
+		$this->log("info",Dumper($socket)); 
+	}
+	
     my $callerid = $this->agi->get_variable("CALLERID(num)");
     my $uline    = $this->agi->get_variable("PARKINGEXTEN");
 
     my $command = sprintf( "COF\r\n%s\r\n-\r\n%s", $callerid, $uline );
+
     if ( $socket->print($command) ) {
         $socket->flush;
     }
@@ -219,6 +231,7 @@ sub _open_blank_taxi_office {
               . $iinfo->{'ip_addr_pc'} . ":"
               . $iinfo->{'port'} );
     }
+	$this->log("info","Sent ($command) to ".$iinfo->{'ip_addr_pc'}.":".$iinfo->{'port'});
     undef $socket;
 
 }
@@ -238,13 +251,22 @@ sub process {
     $memberinterface =~ /^SIP\/(.*)$/;
     my $sip_name = $1;
 
+	if ($this->{debug}) { 
+		$this->log("info","sip_name=$sip_name");
+	}
+
     # Get SIP ID + addr
 
     my ( $sip_id, $sip_addr ) = $this->_find_sipid_by_name($sip_name);
+	if ($this->{debug}) {
+		$this->log("info","sip_id=$sip_id, sip_addr = $sip_addr"); 
+	}
 
     # GET Computer integration info
-
     my $iinfo = $this->_get_iinfo( $sip_id, $sip_addr );
+	if ($this->{debug}){ 
+		 $this->log("info",Dumper($iinfo)); 
+	}
 
     # Check the type of integration and execute it to Computer .
 
@@ -253,7 +275,10 @@ sub process {
     # Currently we support only TaxiOffice mode.
 
     if ( $itype =~ /^TaxiOffice$/i ) {
-        $this->_open_blank_taxi_office($itype);
+		if ($this->{debug}){
+			 $this->log("info","Calling TaxiOffice open blank");
+		}
+        $this->_open_blank_taxi_office($iinfo);
     }
 }
 

@@ -690,7 +690,7 @@ CREATE TABLE recordings (
     original_file character varying,
     concatenated boolean DEFAULT false,
     result_file character varying,
-    previous_record bigint,
+    previous_record bigint DEFAULT 0,
     next_record bigint
 );
 

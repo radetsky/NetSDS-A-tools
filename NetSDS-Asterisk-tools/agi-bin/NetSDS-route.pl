@@ -29,7 +29,7 @@ Router->run(
     daemon      => undef,
     use_pidfile => undef,
     verbose     => undef,
-    debug       => undef,
+    debug       => 1,
     infinite    => undef
 );
 
@@ -189,11 +189,11 @@ sub _get_callerid {
     my $callerid = $result->{'get_callerid'};
     if ( $callerid ne '' ) {
 
-		if ($callerid =~ /^NAME$/i ) {
-			$this->agi->verbose("CHANGING NUM TO NAME.",3);
-			$this->log("info","CHANGING NUM TO NAME.");
-			$callerid = $this->agi->get_variable("CALLERID(name)");
-		}
+        if ( $callerid =~ /^NAME$/i ) {
+            $this->agi->verbose( "CHANGING NUM TO NAME.", 3 );
+            $this->log( "info", "CHANGING NUM TO NAME." );
+            $callerid = $this->agi->get_variable("CALLERID(name)");
+        }
 
         $this->agi->verbose(
 "$peername have to set CallerID to \'$callerid\' while calling to $exten",
@@ -235,7 +235,6 @@ sub _get_dial_route {
 
 }
 
-
 sub _mixmonitor_filename {
     my $this         = shift;
     my $cdr_start    = shift;
@@ -243,8 +242,12 @@ sub _mixmonitor_filename {
 
     $cdr_start =~ /(\d{4})-(\d{1,2})-(\d{1,2}) (\d{1,2}):(\d{1,2}):(\d{1,2})/;
 
-    my $year = $1; my $mon  = $2; my $day  = $3;
-    my $hour = $4; my $min  = $5; my $sec  = $6;
+    my $year = $1;
+    my $mon  = $2;
+    my $day  = $3;
+    my $hour = $4;
+    my $min  = $5;
+    my $sec  = $6;
 
     my $directory =
       sprintf( "/var/spool/asterisk/monitor/%s/%s/%s", $year, $mon, $day );
@@ -255,7 +258,6 @@ sub _mixmonitor_filename {
     return ( $directory, $filename );
 
 }
-
 
 sub _init_mixmonitor {
     my $this = shift;
@@ -271,12 +273,14 @@ sub _init_mixmonitor {
     $this->agi->verbose("CallerID(num)+CDR(start)=$callerid_num $cdr_start");
 
     $this->_init_uline( $callerid_num, $cdr_start );
-	
-	# if exten >0 < 200 then insert copy of the uline with link to voice file. 
-	if ( ( $this->{'exten'} > 0 ) and ( $this->{'exten'} < 200 ) ) { 
-		# parked call 
-		$this->_add_next_recording($callerid_num,$cdr_start,$this->{'exten'});
-	}
+
+    # if exten >0 < 200 then insert copy of the uline with link to voice file.
+    if ( ( $this->{'exten'} > 0 ) and ( $this->{'exten'} < 200 ) ) {
+
+        # parked call
+        $this->_add_next_recording( $callerid_num, $cdr_start,
+            $this->{'exten'} );
+    }
 
 }
 
@@ -322,12 +326,10 @@ sub _uline_by_channel {
         my $uline = $result->{'id'};
         $this->agi->verbose( "EXIST ULINE=$uline", 3 );
         $this->agi->set_variable( 'PARKINGEXTEN', "$uline" );
-		eval { 
-        	$this->dbh->commit;
-		}; 
-		if ($@) { 
-			$this->_exit($this->dbh->errstr); 
-		}
+        eval { $this->dbh->commit; };
+        if ($@) {
+            $this->_exit( $this->dbh->errstr );
+        }
 
         return $uline;
     }
@@ -336,65 +338,72 @@ sub _uline_by_channel {
     return undef;
 }
 
-sub _add_new_recording { 
-	my $this = shift; 
-	my $callerid_num = shift; 
-	my $cdr_start = shift; 
-	my $uline = shift; 
+sub _add_new_recording {
+    my $this         = shift;
+    my $callerid_num = shift;
+    my $cdr_start    = shift;
+    my $uline        = shift;
 
-	$this->_begin;
-	my $sth = $this->dbh->prepare ("insert into integration.recordings (uline_id,original_file) values (?,?) returning id");
-	my ($directory,$original_file) = $this->_mixmonitor_filename ($cdr_start, $callerid_num); 
-	eval { 
-		my $rv = $sth->execute ($uline,$original_file); 
-	};
-	if ($@) { 
-		$this->_exit($this->dbh->errstr); 
-	}
-	my $result = $sth->fetchrow_hashref; 
-	my $new_id = $result->{'id'}; 
-	$this->dbh->commit;
+    $this->_begin;
+    my $sth = $this->dbh->prepare(
+"insert into integration.recordings (uline_id,original_file) values (?,?) returning id"
+    );
+    my ( $directory, $original_file ) =
+      $this->_mixmonitor_filename( $cdr_start, $callerid_num );
+    eval { my $rv = $sth->execute( $uline, $original_file ); };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    my $result = $sth->fetchrow_hashref;
+    my $new_id = $result->{'id'};
+    $this->dbh->commit;
 
 }
 
+sub _add_next_recording {
+    my $this         = shift;
+    my $callerid_num = shift;
+    my $cdr_start    = shift;
+    my $uline        = shift;
 
-sub _add_next_recording { 
-	my $this = shift; 
-	my $callerid_num = shift; 
-	my $cdr_start = shift; 
-	my $uline = shift; 
+    $this->agi->verbose(
+        "Add next recording: '$callerid_num' '$cdr_start' '$uline'", 3 );
+    $this->_begin;
+    my $sth = $this->dbh->prepare(
+"select id from integration.recordings where uline_id=? and next_record is NULL order by id desc limit 1"
+    );
+    eval { my $rv = $sth->execute($uline); };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    my $result = $sth->fetchrow_hashref;
+    unless ( defined($result) ) {
+        $this->_exit(
+            "EXCEPTION: ADDING NEXT RECORD TO NULL. CALL THE LOCKSMAN.");
+    }
+    my $id = $result->{'id'};
 
-	$this->agi->verbose("Add next recording: '$callerid_num' '$cdr_start' '$uline'",3);
-	$this->_begin;
-	my $sth = $this->dbh->prepare("select id from integration.recordings where uline_id=? and next_record is NULL order by id desc limit 1"); 
-	eval { my $rv = $sth->execute ($uline); }; 
-	if ($@) { 
-		$this->_exit($this->dbh->errstr); 
-	} 
-	my $result = $sth->fetchrow_hashref; 
-	unless ( defined ( $result ) ) { 
-		$this->_exit("EXCEPTION: ADDING NEXT RECORD TO NULL. CALL THE LOCKSMAN.");
-	}
-	my $id = $result->{'id'}; 
+    $sth = $this->dbh->prepare(
+"insert into integration.recordings (uline_id,original_file,previous_record) values (?,?,?) returning id"
+    );
+    my ( $directory, $original_file ) =
+      $this->_mixmonitor_filename( $cdr_start, $callerid_num );
+    eval { my $rv = $sth->execute( $uline, $original_file, $id ); };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    $result = $sth->fetchrow_hashref;
+    my $new_id = $result->{'id'};
 
-	$sth = $this->dbh->prepare ("insert into integration.recordings (uline_id,original_file,previous_record) values (?,?,?) returning id");
-	my ($directory,$original_file) = $this->_mixmonitor_filename ($cdr_start, $callerid_num); 
-	eval { 
-		my $rv = $sth->execute ($uline,$original_file,$id); 
-	};
-	if ($@) { 
-		$this->_exit($this->dbh->errstr); 
-	}
-	$result = $sth->fetchrow_hashref; 
-	my $new_id = $result->{'id'}; 
-
-	eval { 
-		$this->dbh->do ("update integration.recordings set next_record=$new_id where id=$id");
-	}; 
-	if ($@) { 
-		$this->_exit($this->dbh->errstr);
-	}
-	$this->dbh->commit; 
+    eval {
+        $this->dbh->do(
+            "update integration.recordings set next_record=$new_id where id=$id"
+        );
+    };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    $this->dbh->commit;
 }
 
 sub _init_uline {
@@ -404,9 +413,13 @@ sub _init_uline {
     my $uniqueid     = $this->agi->get_variable('CDR(uniqueid)');
     my $channel      = $this->{'channel'};
 
-	my $uline = $this->_uline_by_channel($channel);
-    if ( defined ( $uline ) ) {
-		$this->_add_next_recording ($callerid_num,$cdr_start,$uline);
+    if ( $this->{debug} ) {
+        $this->log( "info", "_init_uline: $callerid_num $cdr_start" );
+    }
+
+    my $uline = $this->_uline_by_channel($channel);
+    if ( defined($uline) ) {
+        $this->_add_next_recording( $callerid_num, $cdr_start, $uline );
         return;
     }
 
@@ -426,11 +439,11 @@ sub _init_uline {
     }
 
     my $result = $sth->fetchrow_hashref;
-    $uline  = $result->{'get_free_uline'};
+    $uline = $result->{'get_free_uline'};
 
     $this->agi->verbose( "ULINE=$uline", 3 );
     $this->agi->set_variable( "PARKINGEXTEN", "$uline" );
-	$this->agi->exec("Set","CALLERID(name)=LINE $uline");
+    $this->agi->exec( "Set", "CALLERID(name)=LINE $uline" );
 
     $sth = $this->dbh->prepare(
 "update integration.ulines set status='busy',callerid_num=?,cdr_start=?,channel_name=?,uniqueid=? where id=?"
@@ -448,8 +461,8 @@ sub _init_uline {
         exit(-1);
     }
     $this->dbh->commit;
-	
-	$this->_add_new_recording ($callerid_num, $cdr_start, $uline ); 
+
+    $this->_add_new_recording( $callerid_num, $cdr_start, $uline );
 
 }
 

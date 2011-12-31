@@ -23,7 +23,7 @@ use strict;
 use warnings;
 
 NetSDSHangupD->run(
-    daemon      => undef,
+    daemon      => 1,
     verbose     => 1,
     use_pidfile => 1,
     has_conf    => 1,
@@ -41,17 +41,17 @@ use warnings;
 
 use base qw(NetSDS::App);
 use NetSDS::Asterisk::EventListener;
-use Data::Dumper; 
+use Data::Dumper;
 
 sub start {
     my $this = shift;
 
-	$SIG{TERM} = sub { 
-		exit(-1);
-	};
-	$SIG{INT} = sub { 
-		exit(-1);
-	}; 
+    $SIG{TERM} = sub {
+        exit(-1);
+    };
+    $SIG{INT} = sub {
+        exit(-1);
+    };
 
     $this->mk_accessors('el');
     $this->mk_accessors('dbh');
@@ -182,32 +182,30 @@ sub _clear_ulines {
     # get status
 
     my @liststatus = $this->_get_status($manager);
-	my $busyulines = $this->_get_busy_ulines;
+    my $busyulines = $this->_get_busy_ulines;
 
-	#warn Dumper (\@liststatus); 
-	#warn Dumper ($busyulines);
+    #warn Dumper (\@liststatus);
+    #warn Dumper ($busyulines);
 
     # compare channels with ulines
-	my $id = undef; 
-	my $channel = undef; 
-	my $found = undef; 
+    my $id      = undef;
+    my $channel = undef;
+    my $found   = undef;
 
-	foreach my $i (@{$busyulines}) {
-		$id = ${$i}[0];
-		$channel = ${$i}[1]; 
-		$found = undef; 
-		foreach my $status ( @liststatus ) {
-			if ($status->{'Channel'} eq $channel ) { 
-				$found = 1; 
-				last; 
-			}
-		}
-		unless ( defined ( $found ) ) { 
-			$this->_free_uline ($channel); 
-		}
-	}
-
-
+    foreach my $i ( @{$busyulines} ) {
+        $id      = ${$i}[0];
+        $channel = ${$i}[1];
+        $found   = undef;
+        foreach my $status (@liststatus) {
+            if ( $status->{'Channel'} eq $channel ) {
+                $found = 1;
+                last;
+            }
+        }
+        unless ( defined($found) ) {
+            $this->_free_uline($channel);
+        }
+    }
 
     # clear offline channels
 
@@ -225,7 +223,7 @@ sub _get_status {
 
     my $reply = $manager->receive_answer();
 
-    unless ( defined ( $reply ) ) {
+    unless ( defined($reply) ) {
         return undef;
     }
 
@@ -255,24 +253,23 @@ sub _get_status {
 
 }
 
-sub _get_busy_ulines { 
-	my $this = shift; 
+sub _get_busy_ulines {
+    my $this = shift;
 
-	$this->_begin; 
-	
-	my $sth = $this->dbh->prepare("select id,channel_name from integration.ulines where status='busy' order by id asc");
-	eval { 
-		my $rv = $sth->execute; 
-	}; 
-	if ($@) { 
-		$this->_exit($this->dbh->errstr);
-	}
-	my $busylines = $sth->fetchall_arrayref;
-	$this->dbh->commit; 
+    $this->_begin;
 
-	return $busylines; 
-}	
+    my $sth = $this->dbh->prepare(
+"select id,channel_name from integration.ulines where status='busy' order by id asc"
+    );
+    eval { my $rv = $sth->execute; };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    my $busylines = $sth->fetchall_arrayref;
+    $this->dbh->commit;
 
+    return $busylines;
+}
 
 sub _free_uline {
     my $this    = shift;
@@ -283,9 +280,8 @@ sub _free_uline {
     my $sth = $this->dbh->prepare(
         "select id from integration.ulines where channel_name=? for update");
 
-	eval { my $rv = $sth->execute($channel); };
-    if ($@)
-    {
+    eval { my $rv = $sth->execute($channel); };
+    if ($@) {
         $this->_exit( $this->dbh->errstr );
     }
 
@@ -302,15 +298,49 @@ sub _free_uline {
     $sth = $this->dbh->prepare(
         "update integration.ulines set status='free' where id=?");
     eval { my $rv = $sth->execute($id); };
-      if ($@)
-    {
+    if ($@) {
         $this->_exit( $this->dbh->errstr );
     }
     $this->dbh->commit;
     $this->log( "info", "$channel hangup witn integration.ulines done" );
-	$this->speak ("$channel hangup witn integration.ulines done" );
+    $this->speak("$channel hangup witn integration.ulines done");
+
+    $this->_recording_set_final($id);
 
     return 1;
+}
+
+sub _recording_set_final {
+    my $this     = shift;
+    my $uline_id = shift;
+
+    $this->_begin;
+
+    my $sth = $this->dbh->prepare(
+"select id from integration.recordings where uline_id=? order by id desc limit 1"
+    );
+    eval { my $rv = $sth->execute($uline_id); };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    my $result = $sth->fetchrow_hashref;
+    unless ( defined($result) ) {
+        $this->log( "warning",
+            "Can't find recordings for uline_id=$uline_id. Very strange." );
+        $this->dbh->rollback;
+        return undef;
+    }
+    my $rec_id = $result->{'id'};
+    $sth = $this->dbh->prepare(
+        "update integration.recordings set next_record=0 where id=?");
+    eval { my $rv = $sth->execute($rec_id); };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    $this->dbh->commit;
+    $this->log( "info", "Record # $rec_id for line # $uline_id set as final." );
+    return 1;
+
 }
 
 sub _begin {
@@ -339,12 +369,12 @@ sub process {
 
     while (1) {
         $event = $this->el->_getEvent();
-		unless ( $event ) { 
-			sleep(1);
-			next;
-		}
+        unless ($event) {
+            sleep(1);
+            next;
+        }
 
-        unless ( defined ( $event->{'Event'} ) ) {
+        unless ( defined( $event->{'Event'} ) ) {
             warn Dumper($event);
             next;
         }
