@@ -278,7 +278,7 @@ sub _free_uline {
     $this->_begin;
 
     my $sth = $this->dbh->prepare(
-        "select id from integration.ulines where channel_name=? for update");
+        "select id from integration.ulines where channel_name=? and status='busy' order by id asc limit 1 for update");
 
     eval { my $rv = $sth->execute($channel); };
     if ($@) {
@@ -293,7 +293,10 @@ sub _free_uline {
         $this->dbh->rollback;
         return undef;
     }
-    my $id = $result->{'id'};
+
+	my $id = $result->{'id'};
+	$this->log("info","Got ID = $id for update integration.ulines");
+	$this->speak ("Got ID = $id for update integration.ulines");
 
     $sth = $this->dbh->prepare(
         "update integration.ulines set status='free' where id=?");
@@ -317,7 +320,7 @@ sub _recording_set_final {
     $this->_begin;
 
     my $sth = $this->dbh->prepare(
-"select id from integration.recordings where uline_id=? order by id desc limit 1"
+"select id from integration.recordings where uline_id=? and next_record is NULL order by id desc limit 1"
     );
     eval { my $rv = $sth->execute($uline_id); };
     if ($@) {
