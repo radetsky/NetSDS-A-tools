@@ -41,6 +41,7 @@ use base 'NetSDS::App';
 use Data::Dumper;
 use Asterisk::AGI;
 use File::Path;
+use NetSDS::Asterisk::Manager;
 
 sub start {
     my $this = shift;
@@ -269,15 +270,17 @@ sub _init_mixmonitor {
 
     mkpath($directory);
 
-    $this->agi->exec( "MixMonitor", "$filename" );
+    if ( $this->{'exten'} > 0 ) {
+        $this->agi->exec( "MixMonitor", "$filename" );
+    }
+    else {
+        $this->agi->verbose(
+            "This channel going to park. We do not Monitor it.");
+    }
+
     $this->agi->verbose("CallerID(num)+CDR(start)=$callerid_num $cdr_start");
-
     $this->_init_uline( $callerid_num, $cdr_start );
-
-    # if exten >0 < 200 then insert copy of the uline with link to voice file.
     if ( ( $this->{'exten'} > 0 ) and ( $this->{'exten'} < 200 ) ) {
-
-        # parked call
         $this->_add_next_recording( $callerid_num, $cdr_start,
             $this->{'exten'} );
     }
@@ -338,6 +341,34 @@ sub _uline_by_channel {
     return undef;
 }
 
+sub _uline_by_userfield_and_start {
+    my $this      = shift;
+    my $userfield = shift;
+    my $cdr_start = shift;
+
+    $this->_begin;
+    my $sth = $this->dbh->prepare(
+"select id from integration.ulines where id = ? and cdr_start = ? and status = 'busy'"
+    );
+    eval { my $rv = $sth->execute( $userfield, $cdr_start ); };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    my $result = $sth->fetchrow_hashref;
+    unless ( defined($result) ) {
+        $this->dbh->rollback;
+        return undef;
+    }
+    my $uline = $result->{'id'};
+    $this->agi->verbose( "EXIST USERFIELD ULINE=$uline", 3 );
+    $this->agi->set_variable( 'PARKINGEXTEN', "$uline" );
+    eval { $this->dbh->commit; };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    return $uline;
+}
+
 sub _add_new_recording {
     my $this         = shift;
     my $callerid_num = shift;
@@ -357,6 +388,9 @@ sub _add_new_recording {
     my $result = $sth->fetchrow_hashref;
     my $new_id = $result->{'id'};
     $this->dbh->commit;
+
+	$this->agi->verbose("Added new recording to uline $uline with $cdr_start and $callerid_num",3); 
+	$this->log("info","Added new recording to uline $uline with $cdr_start and $callerid_num"); 
 
 }
 
@@ -406,6 +440,24 @@ sub _add_next_recording {
     $this->dbh->commit;
 }
 
+sub _update_uline_by_new_channel {
+    my $this    = shift;
+    my $uline   = shift;
+    my $channel = shift;
+
+    $this->_begin;
+
+    my $sth = $this->dbh->prepare(
+        "update integration.ulines set channel_name=? where id=?");
+    eval { my $rv = $sth->execute( $channel, $uline ); };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    $this->dbh->commit;
+    $this->agi->verbose( "ULINE $uline updated with $channel", 3 );
+    $this->log( "info", "ULINE $uline updated with $channel" );
+}
+
 sub _init_uline {
     my $this         = shift;
     my $callerid_num = shift;
@@ -415,15 +467,34 @@ sub _init_uline {
 
     if ( $this->{debug} ) {
         $this->log( "info", "_init_uline: $callerid_num $cdr_start" );
+		$this->agi->verbose("_init_uline: $callerid_num $cdr_start", 3);  
     }
 
+    # Try to find existing channel
     my $uline = $this->_uline_by_channel($channel);
-    if ( defined($uline) ) {
-        $this->_add_next_recording( $callerid_num, $cdr_start, $uline );
+    if ( defined ( $uline ) ) { 
+		if ($this->{'exten'} > 0) { 
+        	$this->_add_next_recording( $callerid_num, $cdr_start, $uline );
+		} 
         return;
     }
 
-    $this->_begin;
+    # Try to find by ULINE (userfield)
+    my $userfield = $this->agi->get_variable("CDR(userfield)");
+    $this->log( "info", "CDR(userfield)=" . $userfield );
+    $uline = $this->_uline_by_userfield_and_start( $userfield, $cdr_start );
+	if ( defined ( $uline ) ) { 
+		$this->_update_uline_by_new_channel( $uline, $channel );
+		if ( $this->{'exten'} > 0 ) { 
+			$this->_add_next_recording( $callerid_num, $cdr_start, $uline );
+		} 
+		return; 
+	} 
+
+    # Create new uline
+	$this->agi->verbose("Create new ULINE",3); 
+	
+	$this->_begin;
 
     my $sth =
       $this->dbh->prepare("select * from integration.get_free_uline();");
@@ -442,7 +513,9 @@ sub _init_uline {
     $uline = $result->{'get_free_uline'};
 
     $this->agi->verbose( "ULINE=$uline", 3 );
-    $this->agi->set_variable( "PARKINGEXTEN", "$uline" );
+    $this->agi->set_variable( "PARKINGEXTEN",   "$uline" );
+    $this->agi->set_variable( "CDR(userfield)", "$uline" );
+    $this->agi->set_variable( "ULINE",          "$uline" );
     $this->agi->exec( "Set", "CALLERID(name)=LINE $uline" );
 
     $sth = $this->dbh->prepare(
@@ -464,6 +537,78 @@ sub _init_uline {
 
     $this->_add_new_recording( $callerid_num, $cdr_start, $uline );
 
+}
+
+sub _manager_connect {
+    my $this = shift;
+
+    # connect
+    unless ( defined( $this->conf->{'el'}->{'host'} ) ) {
+        $this->_exit("Can't file el->host in configuration.");
+    }
+    unless ( defined( $this->conf->{'el'}->{'port'} ) ) {
+        $this->_exit("Can't file el->port in configuration.");
+    }
+    unless ( defined( $this->conf->{'el'}->{'username'} ) ) {
+        $this->_exit("Can't file el->username in configuration.");
+    }
+    unless ( defined( $this->conf->{'el'}->{'secret'} ) ) {
+        $this->_exit("Can't file el->secret in configuration.");
+    }
+
+    my $el_host     = $this->conf->{'el'}->{'host'};
+    my $el_port     = $this->conf->{'el'}->{'port'};
+    my $el_username = $this->conf->{'el'}->{'username'};
+    my $el_secret   = $this->conf->{'el'}->{'secret'};
+
+    my $manager = NetSDS::Asterisk::Manager->new(
+        host     => $el_host,
+        port     => $el_port,
+        username => $el_username,
+        secret   => $el_secret,
+        events   => 'Off'
+    );
+
+    my $connected = $manager->connect;
+    unless ( defined($connected) ) {
+        $this->_exit("Can't connect to the asterisk manager interface.");
+    }
+    return $manager;
+
+}
+
+sub _get_status {
+    my $this    = shift;
+    my $manager = shift;
+
+    my $sent = $manager->sendcommand( 'Action' => 'Status' );
+    unless ( defined($sent) ) {
+        return undef;
+    }
+    my $reply = $manager->receive_answer();
+    unless ( defined($reply) ) {
+        return undef;
+    }
+    my $status = $reply->{'Response'};
+    unless ( defined($status) ) {
+        return undef;
+    }
+    if ( $status ne 'Success' ) {
+        $this->seterror('Status: Response not success');
+        return undef;
+    }
+
+    # reading from spcket while did not receive Event: StatusComplete
+    my @replies;
+    while (1) {
+        $reply  = $manager->receive_answer();
+        $status = $reply->{'Event'};
+        if ( $status eq 'StatusComplete' ) {
+            last;
+        }
+        push @replies, $reply;
+    }
+    return @replies;
 }
 
 sub process {
