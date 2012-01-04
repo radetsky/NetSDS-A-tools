@@ -1241,7 +1241,7 @@ ALTER SEQUENCE callerid_id_seq OWNED BY callerid.id;
 CREATE TABLE directions (
     dr_id bigint NOT NULL,
     dr_list_item bigint NOT NULL,
-    dr_prefix character varying(16) NOT NULL,
+    dr_prefix character varying(32) NOT NULL,
     dr_prio smallint DEFAULT 5 NOT NULL
 );
 

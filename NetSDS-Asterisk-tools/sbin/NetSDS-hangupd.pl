@@ -43,6 +43,8 @@ use base qw(NetSDS::App);
 use NetSDS::Asterisk::EventListener;
 use Data::Dumper;
 
+our @expire_list = (); 
+
 sub start {
     my $this = shift;
 
@@ -271,6 +273,26 @@ sub _get_busy_ulines {
     return $busylines;
 }
 
+sub _get_uline_by_channel { 
+    my $this    = shift;
+    my $channel = shift;
+
+    $this->_begin;
+    my $sth = $this->dbh->prepare(
+        "select id from integration.ulines where channel_name=? and status='busy' order by id asc limit 1");
+    eval { my $rv = $sth->execute($channel); };
+    if ($@) {
+        $this->_exit( $this->dbh->errstr );
+    }
+    my $result = $sth->fetchrow_hashref;
+	$this->dbh->rollback; 
+
+	unless ( defined ( $result ) ) { 
+		return undef; 
+	}
+	return $result->{'id'}; 	
+}
+
 sub _free_uline {
     my $this    = shift;
     my $channel = shift;
@@ -305,8 +327,8 @@ sub _free_uline {
         $this->_exit( $this->dbh->errstr );
     }
     $this->dbh->commit;
-    $this->log( "info", "$channel hangup witn integration.ulines done" );
-    $this->speak("$channel hangup witn integration.ulines done");
+    $this->log( "info", "uline $id with $channel cleared" );
+    $this->speak("uline $id with $channel cleared");
 
     $this->_recording_set_final($id);
 
@@ -364,16 +386,54 @@ sub _exit {
     exit(-1);
 }
 
+sub _add_2_expire  { 
+	my $this = shift; 
+	my $channel = shift; 
+	my $uline = shift; 
+	my $expire_time = shift; 
+
+	$this->log("info","added to expire list $uline $channel $expire_time"); 
+	push @expire_list, { channel => $channel, uline => $uline, expire_time => $expire_time } ; 
+
+}
+
+sub _expire_ulines { 
+	my $this = shift; 
+	my $t = undef; 
+	my $item = undef; 
+
+	while (1) { 
+		$t = time(); 
+		$item = shift @expire_list; 
+		unless ( $item ) { 
+			$this->log("info","Empty expire list");
+			return undef; 
+		} 
+		if ($item->{'expire_time'} < $t ) {
+			$this->log("info","Time: $t to free uline $item->{'uline'} with $item->{'channel'}"); 
+			$this->_free_uline ($item->{'channel'}); 
+		} else { 
+			$this->log("info","First item in the expire_list has time in future. "); 
+			unshift @expire_list,$item; 
+			return 1; 
+		} 
+	} 
+
+
+}
 sub process {
     my $this = shift;
 
     my $event   = undef;
     my $channel = undef;
+	my $uline = undef; 
 
     while (1) {
+
         $event = $this->el->_getEvent();
         unless ($event) {
             sleep(1);
+			$this->_expire_ulines();
             next;
         }
 
@@ -382,9 +442,16 @@ sub process {
             next;
         }
         if ( $event->{'Event'} =~ /Hangup/i ) {
+
             $channel = $event->{'Channel'};
-            $this->_free_uline($channel);
-        }
+			$this->log("info","Got hangup for $channel"); 
+			$uline = $this->_get_uline_by_channel ($channel); 
+			unless ( defined ( $uline ) ) { 
+				next; 
+			}
+			$this->_add_2_expire ($channel, $uline , time()+5);
+		}
+		$this->_expire_ulines();
     }
 
 }

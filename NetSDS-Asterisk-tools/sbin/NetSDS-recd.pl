@@ -56,6 +56,8 @@ sub start {
     $this->mk_accessors('dbh');
     $this->_db_connect();
 
+	$this->{'bad_id'} = 0; 
+
 }
 
 sub _db_connect {
@@ -120,7 +122,7 @@ sub _get_next_record {
 
     # remember - transaction already began;
     my $sth = $this->dbh->prepare(
-        "select * from integration.recordings where previous_record=?");
+        "select * from integration.recordings where previous_record=? and next_record is not null");
     eval { $sth->execute($current_id); };
     if ($@) {
         $this->_exit( $this->dbh->errstr );
@@ -166,16 +168,23 @@ sub process {
     # find all files in chain
     # prepare sox string and print it
 
+	if ($this->{'bad_id'} > 0) { 
+		$this->log("info","Skipping id=".$this->{'bad_id'}." until talk is active."); 
+		$this->speak("Skipping id=".$this->{'bad_id'}." until talk is active.");
+	} 
+
     $this->_begin;
+	
     my $sth = $this->dbh->prepare(
         "select * from integration.recordings 
 			where concatenated=false 
-				and result_file is null 
+				and result_file is null
+				and next_record is not null 
 				and previous_record=0 
+				and id > ? 
 			order by id asc limit 1 for update"
     );
-
-    eval { $sth->execute; };
+    eval { $sth->execute ($this->{'bad_id'}); };
     if ($@) {
         $this->_exit( $this->dbh->errstr );
     }
@@ -194,7 +203,8 @@ sub process {
     my $strlog =
       "Got ID=$id ULINE=$uline_id FILE=$original_file NEXT=$next_record";
 
-    $this->log( "info", $strlog );
+	$this->{'bad_id'} = $next_record; 
+	$this->log( "info", $strlog );
     $this->speak($strlog);
 
     if ( $next_record == 0 ) {    # First and Final record
@@ -241,7 +251,8 @@ sub process {
         my $next_record = $this->_get_next_record($id);
 
         unless ( defined($next_record) ) {
-            last;
+			$this->dbh->rollback;
+            return; 
         }
 
         $strlog = sprintf(
@@ -250,12 +261,17 @@ sub process {
             $next_record->{'original_file'}, $next_record->{'next_record'}
         );
 
+		$this->{'bad_id'} = $next_record->{'id'}; 
         $this->log( "info", $strlog );
         $this->speak($strlog);
 
         push @nexts, $next_record;
         $id = $next_record->{'id'};
-    }
+		
+		if ($next_record->{'next_record'} == 0) { 
+			last; 
+		} 
+	}
 
 	my @infiles = ();
 	my @nexts_copy = @nexts; 	
