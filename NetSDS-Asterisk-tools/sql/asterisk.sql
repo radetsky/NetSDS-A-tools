@@ -1122,7 +1122,8 @@ CREATE TABLE sip_peers (
     regserver character varying(100) DEFAULT NULL::character varying,
     fullcontact character varying(80) DEFAULT NULL::character varying,
     useragent character varying(20) DEFAULT NULL::character varying,
-    defaultuser character varying(10) DEFAULT NULL::character varying
+    defaultuser character varying(10) DEFAULT NULL::character varying,
+    CONSTRAINT sip_peers_name_check CHECK (((name)::text <> ''::text))
 );
 
 

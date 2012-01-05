@@ -1322,7 +1322,8 @@ CREATE TABLE sip_peers (
     regserver character varying(100) DEFAULT NULL::character varying,
     fullcontact character varying(80) DEFAULT NULL::character varying,
     useragent character varying(20) DEFAULT NULL::character varying,
-    defaultuser character varying(10) DEFAULT NULL::character varying
+    defaultuser character varying(10) DEFAULT NULL::character varying,
+    CONSTRAINT sip_peers_name_check CHECK (((name)::text <> ''::text))
 );
 
 
@@ -2710,9 +2711,9 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 72	216	\N	\N	\N	Evakuator 4 <216>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 73	217	\N	\N	\N	Leader 1 <217>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 74	218	\N	\N	\N	Leader 2 <218>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1325703340	192.168.1.114		yes		1	10		sip:201@192.168.1.114:5060	\N	\N
 75	219	\N	\N	\N	Mini 1 <219>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 76	220	\N	\N	\N	Unused <220>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1325768018	192.168.1.114		yes		1	5		sip:201@192.168.1.114:5060	\N	\N
 59	203	\N	\N	\N	Express 3 <203>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 60	204	\N	\N	\N	Express 4 <204>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
 61	205	\N	\N	\N	Express 5 <205>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
