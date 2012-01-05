@@ -18,6 +18,8 @@ BuildRequires: pwgen
 BuildRequires: perl-Getopt-Mixed
 BuildRequires: perl-NetSDS
 BuildRequires: perl-NetSDS-Asterisk
+BuildRequires: perl-IO-Prompt 
+BuildRequires: Nibelite-core
 
 Requires: perl-NetSDS-Asterisk
 Requires: perl-NetSDS
@@ -25,6 +27,9 @@ Requires: perl-Data-UUID
 Requires: pwgen
 Requires: service
 Requires: perl-Getopt-Mixed
+Requires: perl-IO-Prompt 
+Requires: Nibelite-core 
+
 
 %description
 Some useful tools: 
