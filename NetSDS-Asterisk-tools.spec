@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt9
+Release: alt10
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -53,6 +53,8 @@ mkdir -p %buildroot/etc/NetSDS
 mkdir -p %buildroot%_initdir
 install -m750 etc/NetSDS-hangupd.init %buildroot%_initdir/NetSDS-hangupd
 install -m755 callback.sh %buildroot/usr/bin/
+install -m755 bin/peermod.pl %buildroot/usr/bin/
+install -m755 bin/astconf2sql.pl %buildroot/usr/bin/
 install -m755 voicefiles.rotate.sh %buildroot/etc/cron.daily/
 install -m755 uuid.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 navconnect.sh %buildroot/usr/lib/asterisk/agi-bin/
@@ -75,6 +77,8 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 
 %files
 /usr/bin/callback.sh
+/usr/bin/astconf2sql.pl
+/usr/bin/peermod.pl
 /etc/cron.daily/voicefiles.rotate.sh 
 /usr/lib/asterisk/agi-bin/uuid.pl 
 /usr/lib/asterisk/agi-bin/navconnect.sh
@@ -90,6 +94,9 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 
 %changelog
+* Thu Jan 05 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt10
+- Added astconf2sql.pl and peermod.pl
+
 * Thu Jan 05 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt9
 - Added NetSDS-recd.pl
 
