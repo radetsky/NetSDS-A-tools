@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt8
+Release: alt9
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -57,6 +57,7 @@ install -m755 make_sip_conf.pl %buildroot/usr/bin/
 install -m644 NetSDS.ael %buildroot/usr/share/doc/%origname
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
 install -m755 sbin/NetSDS-hangupd.pl %buildroot/usr/sbin/
+install -m755 sbin/NetSDS-recd.pl %buildroot/usr/sbin/
 install -m644 etc/NetSDS/asterisk-router.conf %buildroot/etc/NetSDS
 cp -ar dialplan %buildroot/usr/share/doc/%origname/
 cp -ar sql %buildroot/usr/share/doc/%origname
@@ -76,6 +77,7 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 /usr/lib/asterisk/agi-bin/officepark.pl
 /usr/bin/make_sip_conf.pl 
 /usr/sbin/NetSDS-hangupd.pl 
+/usr/sbin/NetSDS-recd.pl
 /usr/share/doc/NetSDS-Asterisk-tools/*
 /usr/share/doc/NetSDS-Asterisk-tools/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
@@ -83,6 +85,9 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 
 %changelog
+* Thu Jan 05 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt9
+- Added NetSDS-recd.pl
+
 * Thu Dec 22 2011 Dmitriy Kruglikov <dkr@altlinux.ru> 1.0-alt8
 - Fixed spec
 
