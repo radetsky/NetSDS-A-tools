@@ -103,7 +103,7 @@ compile_GXP1200_config ${MAC}
 }
 
 compile_GXP1200_config(){
-    /usr/local/bin/grandstream-config.pl ${MAC} ${TFTPDIR}/cfg${MAC}.txt ${TFTPDIR}/cfg${MAC}
+    /usr/bin/grandstream-config.pl ${MAC} ${TFTPDIR}/cfg${MAC}.txt ${TFTPDIR}/cfg${MAC}
     rm -rf ${TFTPDIR}/cfg${MAC}.txt
     chmod 777 ${TFTPDIR}/cfg${MAC}
     clear_vars
