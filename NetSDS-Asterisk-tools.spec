@@ -30,6 +30,11 @@ Requires: perl-Getopt-Mixed
 Requires: perl-IO-Prompt 
 Requires: Nibelite-core 
 
+# apt-get install asterisk1.4.42-chan_sip asterisk1.4.42 perl-asterisk-perl asterisk-base-configs asterisk-images asterisk-initscript asterisk-sounds-base asterisk-sounds-ru-base asterisk-user asterisk-base asterisk-keys  asterisk-files-all  asterisk1.4.42 asterisk1.4.42-codec_gsm asterisk1.4.42-ael asterisk1.4.42-docs asterisk-core-sounds-ru-ulaw asterisk-firmware asterisk1.4.42-res_crypto asterisk1.4.42-pgsql 
+
+# А где конфиги ? /etc/asterisk ? 
+
+# Где tftpprovidor.sh:
 
 %description
 Some useful tools: 

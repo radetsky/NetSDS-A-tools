@@ -866,7 +866,7 @@ ALTER SEQUENCE recordings_id_seq OWNED BY recordings.id;
 -- Name: recordings_id_seq; Type: SEQUENCE SET; Schema: integration; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('recordings_id_seq', 206, true);
+SELECT pg_catalog.setval('recordings_id_seq', 209, true);
 
 
 --
@@ -1323,6 +1323,7 @@ CREATE TABLE sip_peers (
     fullcontact character varying(80) DEFAULT NULL::character varying,
     useragent character varying(20) DEFAULT NULL::character varying,
     defaultuser character varying(10) DEFAULT NULL::character varying,
+    outboundproxy character varying(80) DEFAULT NULL::character varying,
     CONSTRAINT sip_peers_name_check CHECK (((name)::text <> ''::text))
 );
 
@@ -1591,8 +1592,7 @@ SELECT pg_catalog.setval('"directions_list_DLIST_ID_seq"', 6, true);
 CREATE TABLE permissions (
     id bigint NOT NULL,
     direction_id bigint,
-    peer_id bigint,
-    peer_type character varying(4) DEFAULT "current_user"() NOT NULL
+    peer_id bigint
 );
 
 
@@ -2127,6 +2127,9 @@ COPY recordings (id, uline_id, original_file, concatenated, result_file, previou
 202	1	2012/01/04/202056-1003.wav	t	2012/01/04/202056-1003.mp3	0	204
 204	1	2012/01/04/202103-201.wav	t	2012/01/04/202056-1003.mp3	202	206
 206	1	2012/01/04/202313-201.wav	t	2012/01/04/202056-1003.mp3	204	0
+207	1	2012/01/06/201629-201.wav	f	\N	0	\N
+208	2	2012/01/06/201646-201.wav	f	\N	0	\N
+209	3	2012/01/06/201659-201.wav	f	\N	0	\N
 \.
 
 
@@ -2316,9 +2319,9 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 198	free	\N	\N	\N	\N
 199	free	\N	\N	\N	\N
 200	free	\N	\N	\N	\N
-2	free	201	2012-01-04 20:21:03	SIP/201-000000ae	1325701263.256
-1	free	1003	2012-01-04 20:20:56	SIP/t_express-000000ac	1325701256.253
-3	free	201	2012-01-04 20:23:13	SIP/201-000000af	1325701393.259
+1	busy	201	2012-01-06 20:16:29	SIP/201-00000000	1325873789.0
+2	busy	201	2012-01-06 20:16:46	SIP/201-00000002	1325873806.2
+3	busy	201	2012-01-06 20:16:59	SIP/201-00000004	1325873819.4
 13	free	201	2011-12-17 15:45:37	SIP/201-00000023	1324129537.46
 15	free	201	2011-12-17 15:45:57	SIP/201-00000025	1324129557.50
 17	free	201	2011-12-17 15:46:27	SIP/201-00000027	1324129587.56
@@ -2603,6 +2606,9 @@ COPY cdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, last
 2011-12-17 12:40:46+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000003	SIP/201-00000004	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	14	12	ANSWERED	3		1324118446.4	
 2011-12-17 12:41:30+02	"Alex Radetsky" <1003>	1003	2391515	express	SIP/t_express-00000009	SIP/201-0000000a	Queue	express|rtTn|15|NetSDS-AGI-Integration.pl	11	8	ANSWERED	3		1324118490.11	
 2011-12-17 12:41:56+02	"Im Phone" <201>	201	8	parkingslot	SIP/201-0000000b	SIP/t_express-00000009	ParkedCall	8	10	10	ANSWERED	3		1324118516.14	
+2012-01-06 20:16:29+02	"LINE 1" <201>	201	1003	default	SIP/201-00000000	SIP/t_express-00000001	Hangup	17	0	0	FAILED	3		1325873789.0	1
+2012-01-06 20:16:46+02	"LINE 2" <201>	201	1003	default	SIP/201-00000002	SIP/t_express-00000003	Dial	SIP/t_express/1003|120|rtTg	9	3	ANSWERED	3		1325873806.2	2
+2012-01-06 20:16:59+02	"LINE 3" <201>	201	1001	default	SIP/201-00000004	SIP/t_express-00000005	Dial	SIP/t_express/1001|120|rtTg	13	8	ANSWERED	3		1325873819.4	3
 2011-12-09 23:59:55+02	"Alex Radetsky" <1003>	1003	201	default	SIP/t_express-00000008	SIP/201-00000009	Dial	SIP/201|120|rtT	6	0	NO ANSWER	3		1323467995.8	
 \.
 
@@ -2701,32 +2707,31 @@ COPY sip_conf (id, cat_metric, var_metric, commented, filename, category, var_na
 -- Data for Name: sip_peers; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvite, directmedia, context, defaultip, dtmfmode, fromuser, fromdomain, host, insecure, language, mailbox, md5secret, nat, permit, deny, mask, pickupgroup, port, qualify, restrictcid, rtptimeout, rtpholdtimeout, secret, type, username, disallow, allow, musiconhold, regseconds, ipaddr, regexten, cancallforward, comment, "call-limit", lastms, regserver, fullcontact, useragent, defaultuser) FROM stdin;
-1	kyivstar	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-2	gsm1	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-3	gsm2	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-4	gsm3	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-58	202	\N	\N	\N	Express 2 <202>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N
-72	216	\N	\N	\N	Evakuator 4 <216>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-73	217	\N	\N	\N	Leader 1 <217>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-74	218	\N	\N	\N	Leader 2 <218>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-75	219	\N	\N	\N	Mini 1 <219>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-76	220	\N	\N	\N	Unused <220>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1325768018	192.168.1.114		yes		1	5		sip:201@192.168.1.114:5060	\N	\N
-59	203	\N	\N	\N	Express 3 <203>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-60	204	\N	\N	\N	Express 4 <204>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-61	205	\N	\N	\N	Express 5 <205>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-62	206	\N	\N	\N	Express 6 <206>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-63	207	\N	\N	\N	Express 7 <207>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-64	208	\N	\N	\N	Auto 1 <208>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-65	209	\N	\N	\N	Auto 2 <209>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-66	210	\N	\N	\N	Auto 3 <210>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-67	211	\N	\N	\N	Auto 4 <211>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-68	212	\N	\N	\N	Auto 5 <212>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-69	213	\N	\N	\N	Evakuator 1 <213>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-70	214	\N	\N	\N	Evakuator 2 <214>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
-71	215	\N	\N	\N	Evakuator 3 <215>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N
+COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvite, directmedia, context, defaultip, dtmfmode, fromuser, fromdomain, host, insecure, language, mailbox, md5secret, nat, permit, deny, mask, pickupgroup, port, qualify, restrictcid, rtptimeout, rtpholdtimeout, secret, type, username, disallow, allow, musiconhold, regseconds, ipaddr, regexten, cancallforward, comment, "call-limit", lastms, regserver, fullcontact, useragent, defaultuser, outboundproxy) FROM stdin;
+2	gsm1	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+3	gsm2	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+4	gsm3	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+58	202	\N	\N	\N	Express 2 <202>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	WhiteBlack	friend	202	all	ulaw,alaw	\N	0			yes		1	-1			\N	\N	\N
+72	216	\N	\N	\N	Evakuator 4 <216>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+73	217	\N	\N	\N	Leader 1 <217>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+74	218	\N	\N	\N	Leader 2 <218>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+75	219	\N	\N	\N	Mini 1 <219>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+76	220	\N	\N	\N	Unused <220>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+59	203	\N	\N	\N	Express 3 <203>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+60	204	\N	\N	\N	Express 4 <204>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+61	205	\N	\N	\N	Express 5 <205>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+62	206	\N	\N	\N	Express 6 <206>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+63	207	\N	\N	\N	Express 7 <207>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+64	208	\N	\N	\N	Auto 1 <208>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+65	209	\N	\N	\N	Auto 2 <209>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+66	210	\N	\N	\N	Auto 3 <210>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+67	211	\N	\N	\N	Auto 4 <211>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+68	212	\N	\N	\N	Auto 5 <212>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+69	213	\N	\N	\N	Evakuator 1 <213>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+70	214	\N	\N	\N	Evakuator 2 <214>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+71	215	\N	\N	\N	Evakuator 3 <215>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
+56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	193.193.194.6
+57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1325874879	192.168.1.114		yes		1	9		sip:201@192.168.1.114:5060	\N	\N	\N
 \.
 
 
@@ -2792,17 +2797,15 @@ COPY directions_list (dlist_id, dlist_name) FROM stdin;
 -- Data for Name: permissions; Type: TABLE DATA; Schema: routing; Owner: asterisk
 --
 
-COPY permissions (id, direction_id, peer_id, peer_type) FROM stdin;
-1	1	1	peer
-2	2	1	user
-3	3	58	user
-4	3	56	peer
-5	4	56	peer
-6	1	56	peer
-7	1	57	user
-9	5	57	user
-10	5	56	peer
-11	6	57	user
+COPY permissions (id, direction_id, peer_id) FROM stdin;
+3	3	58
+4	3	56
+5	4	56
+6	1	56
+7	1	57
+9	5	57
+10	5	56
+11	6	57
 \.
 
 
