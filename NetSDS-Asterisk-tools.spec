@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt11
+Release: alt12
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -69,6 +69,7 @@ install -m755 agi-bin/NetSDS-route.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 agi-bin/NetSDS-AGI-Integration.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 make_sip_conf.pl %buildroot/usr/bin/
 install -m644 NetSDS.ael %buildroot/usr/share/doc/%origname
+install -m644 sql/asterisk2.sql %buildroot/usr/share/doc/%origname
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
 install -m755 sbin/NetSDS-hangupd.pl %buildroot/usr/sbin/
 install -m755 sbin/NetSDS-recd.pl %buildroot/usr/sbin/
@@ -105,6 +106,9 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 
 %changelog
+* Sun Jan 08 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt12
+- Updated spec
+
 * Fri Jan 06 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt11
 - Added tftpprovisor for configuring autoprovisioning
 
