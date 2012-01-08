@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt9
+Release: alt11
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -58,6 +58,8 @@ mkdir -p %buildroot/etc/NetSDS
 mkdir -p %buildroot%_initdir
 install -m750 etc/NetSDS-hangupd.init %buildroot%_initdir/NetSDS-hangupd
 install -m755 callback.sh %buildroot/usr/bin/
+install -m755 bin/peermod.pl %buildroot/usr/bin/
+install -m755 bin/astconf2sql.pl %buildroot/usr/bin/
 install -m755 voicefiles.rotate.sh %buildroot/etc/cron.daily/
 install -m755 uuid.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 navconnect.sh %buildroot/usr/lib/asterisk/agi-bin/
@@ -69,6 +71,8 @@ install -m644 dialout_examples.ael %buildroot/etc/asterisk
 install -m755 sbin/NetSDS-hangupd.pl %buildroot/usr/sbin/
 install -m755 sbin/NetSDS-recd.pl %buildroot/usr/sbin/
 install -m644 etc/NetSDS/asterisk-router.conf %buildroot/etc/NetSDS
+install -m750 tftpprovisor.sh %buildroot/usr/bin/
+install -m750 grandstream-config.pl %buildroot/usr/bin/
 cp -ar dialplan %buildroot/usr/share/doc/%origname/
 cp -ar sql %buildroot/usr/share/doc/%origname
 
@@ -80,12 +84,16 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 
 %files
 /usr/bin/callback.sh
+/usr/bin/astconf2sql.pl
+/usr/bin/peermod.pl
 /etc/cron.daily/voicefiles.rotate.sh 
 /usr/lib/asterisk/agi-bin/uuid.pl 
 /usr/lib/asterisk/agi-bin/navconnect.sh
 /usr/lib/asterisk/agi-bin/confirm_call.sh
 /usr/lib/asterisk/agi-bin/officepark.pl
 /usr/bin/make_sip_conf.pl 
+/usr/bin/grandstream-config.pl
+/usr/bin/tftpprovisor.sh
 /usr/sbin/NetSDS-hangupd.pl 
 /usr/sbin/NetSDS-recd.pl
 /usr/share/doc/NetSDS-Asterisk-tools/*
@@ -95,6 +103,12 @@ cp -ar sql %buildroot/usr/share/doc/%origname
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 
 %changelog
+* Fri Jan 06 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt11
+- Added tftpprovisor for configuring autoprovisioning
+
+* Thu Jan 05 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt10
+- Added astconf2sql.pl and peermod.pl
+
 * Thu Jan 05 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt9
 - Added NetSDS-recd.pl
 
