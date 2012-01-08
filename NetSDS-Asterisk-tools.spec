@@ -66,7 +66,7 @@ install -m755 navconnect.sh %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 confirm_call.sh %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 officepark.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 agi-bin/NetSDS-route.pl %buildroot/usr/lib/asterisk/agi-bin/
-install -m755 agi-bin/NetSDS-AGI-Integration.pl %buildroot/usr/lib/asterisk/agi-bin/
+install -m755 agi-bin/NetSDS-AGI-integration.pl %buildroot/usr/lib/asterisk/agi-bin/
 install -m755 make_sip_conf.pl %buildroot/usr/bin/
 install -m644 NetSDS.ael %buildroot/usr/share/doc/%origname
 install -m644 sql/asterisk2.sql %buildroot/usr/share/doc/%origname
