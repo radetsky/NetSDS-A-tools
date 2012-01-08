@@ -132,6 +132,7 @@ SET search_path = routing, pg_catalog;
 DROP FUNCTION routing.route_test();
 DROP FUNCTION routing.get_permission(peer_name character varying, number_b character varying);
 DROP FUNCTION routing.get_next_trunk_in_group(group_id bigint);
+DROP FUNCTION routing.get_dial_route4(peername character varying, exten character varying, current_try integer);
 DROP FUNCTION routing.get_dial_route3(exten character varying, current_try integer);
 DROP FUNCTION routing.get_dial_route(destination character varying, try integer);
 DROP FUNCTION routing.get_callerid(peer_name character varying, number_b character varying);
@@ -612,6 +613,133 @@ $_$;
 ALTER FUNCTION routing.get_dial_route3(exten character varying, current_try integer) OWNER TO asterisk;
 
 --
+-- Name: get_dial_route4(character varying, character varying, integer); Type: FUNCTION; Schema: routing; Owner: asterisk
+--
+
+CREATE FUNCTION get_dial_route4(peername character varying, exten character varying, current_try integer) RETURNS TABLE(dst_str character varying, dst_type character varying, try integer)
+    LANGUAGE plpgsql
+    AS $_$
+declare
+
+dir routing.directions%ROWTYPE;
+r routing.route%ROWTYPE;
+rname varchar(32);
+trunk_id bigint; 
+sip_id bigint; 
+
+begin
+
+--
+-- Get SIP ID from peername; 
+-- 
+
+select id from public.sip_peers where name=$1 into sip_id; 
+if not found then 
+	raise exception 'NO SOURCE PEER/USER BY CHANNEL';
+end if; 
+
+--
+-- Try to find direction by prefix;
+-- 
+select * into dir from routing.directions 
+	where $2 ~ dr_prefix 
+	order by dr_prio 
+	asc 
+	limit 1; 
+
+if not found then 
+	raise exception 'NO DIRECTION';
+end if; 
+
+--
+-- Try to find route record that will give us type and destination id.
+--
+ 
+--
+-- First try to search route record with peer sip ID 
+--
+
+select * into r from routing.route 
+	where route_direction_id = dir.dr_list_item 
+	and route_step = $3 
+	and route_sip_id = sip_id 
+	order by route_step asc limit 1; 
+
+if not found then 
+-- Try to find general route record with (route_sip_id = NULL) 
+	select * into r from routing.route 
+		where route_direction_id = dir.dr_list_item 
+		and route_step = $3  
+		order by route_step asc limit 1; 
+	if not found then 
+		raise exception 'NO ROUTE';
+	end if;
+end if;  
+
+dst_type = r.route_type;
+try = current_try; 
+
+-- Try to find destination id and name; 
+-- case route_type (user) 
+if r.route_type = 'user' then 
+	select name into dst_str from public.sip_peers where id=r.route_dest_id; 
+	if not found then 
+		raise exception 'NO DESTINATION'; 
+	end if; 
+	
+	return next;
+	return;
+end if; 
+-- case route_type (trunk) 
+if r.route_type = 'trunk' then 
+	select name into dst_str from public.sip_peers where id=r.route_dest_id; 
+	if not found then 
+		raise exception 'NO DESTINATION'; 
+	end if;
+	return next;
+	return;
+end if; 
+
+-- case route_type (context) 
+if r.route_type = 'context' then 
+	select context into dst_str from public.extensions_conf where id=r.route_dest_id; 
+	if not found then 
+		raise exception 'NO DESTINATION'; 
+	end if; 
+	return next; 
+	return; 
+end if; 
+
+-- case route_type (trunkgroup) 
+if r.route_type = 'tgrp' then 
+-- находим последний транк в группе, который был заюзан крайний раз.
+-- и уменьшаем кол-во попыток на -1 , что бы снова вернутся к группе. 
+-- ВОПРОС: а как же определить заканчивание цикла ?  
+-- ОТВЕТ: в перле. 
+	try = current_try - 1; 
+	select get_next_trunk_in_group into trunk_id from routing.get_next_trunk_in_group (r.route_dest_id);
+	if trunk_id < 0 then 
+		raise exception 'NO DESTINATION IN GROUP'; 
+	end if; 
+
+	select name into dst_str from public.sip_peers where id=trunk_id; 
+	if not found then 
+		raise exception 'NO DESTINATION'; 
+	end if;
+	return next;
+	return;
+
+end if; 
+RAISE EXCEPTION 'This is the end. Some situation can not be handled.';
+return;
+
+end
+$_$;
+
+
+ALTER FUNCTION routing.get_dial_route4(peername character varying, exten character varying, current_try integer) OWNER TO asterisk;
+
+--
 -- Name: get_next_trunk_in_group(bigint); Type: FUNCTION; Schema: routing; Owner: asterisk
 --
 
@@ -866,7 +994,7 @@ ALTER SEQUENCE recordings_id_seq OWNED BY recordings.id;
 -- Name: recordings_id_seq; Type: SEQUENCE SET; Schema: integration; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('recordings_id_seq', 209, true);
+SELECT pg_catalog.setval('recordings_id_seq', 210, true);
 
 
 --
@@ -1643,6 +1771,7 @@ CREATE TABLE route (
     route_step smallint,
     route_type character varying(8) DEFAULT 'trunk'::character varying NOT NULL,
     route_dest_id bigint NOT NULL,
+    route_sip_id bigint,
     CONSTRAINT route_route_prio_check CHECK (((route_step >= 0) AND (route_step <= 5))),
     CONSTRAINT route_type_check CHECK ((((((route_type)::text = 'user'::text) OR ((route_type)::text = 'context'::text)) OR ((route_type)::text = 'trunk'::text)) OR ((route_type)::text = 'tgrp'::text)))
 );
@@ -1663,6 +1792,13 @@ COMMENT ON TABLE route IS 'Таблица маршрутизации.
 --
 
 COMMENT ON COLUMN route.route_step IS 'Шаг. Попытка. Обычно не более 5.';
+
+
+--
+-- Name: COLUMN route.route_sip_id; Type: COMMENT; Schema: routing; Owner: asterisk
+--
+
+COMMENT ON COLUMN route.route_sip_id IS 'Если не NULL, то правило маршрутизации касается только указанного sip_id (sip_peers.id). ';
 
 
 --
@@ -2130,6 +2266,7 @@ COPY recordings (id, uline_id, original_file, concatenated, result_file, previou
 207	1	2012/01/06/201629-201.wav	f	\N	0	\N
 208	2	2012/01/06/201646-201.wav	f	\N	0	\N
 209	3	2012/01/06/201659-201.wav	f	\N	0	\N
+210	4	2012/01/08/122437-1003.wav	f	\N	0	\N
 \.
 
 
@@ -2322,10 +2459,10 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 1	busy	201	2012-01-06 20:16:29	SIP/201-00000000	1325873789.0
 2	busy	201	2012-01-06 20:16:46	SIP/201-00000002	1325873806.2
 3	busy	201	2012-01-06 20:16:59	SIP/201-00000004	1325873819.4
+4	busy	1003	2012-01-08 12:24:37	SIP/t_express-00000006	1326018277.6
 13	free	201	2011-12-17 15:45:37	SIP/201-00000023	1324129537.46
 15	free	201	2011-12-17 15:45:57	SIP/201-00000025	1324129557.50
 17	free	201	2011-12-17 15:46:27	SIP/201-00000027	1324129587.56
-4	free	201	2011-12-17 14:18:37	SIP/201-0000000e	1324124317.18
 5	free	1003	2011-12-17 14:23:29	SIP/t_express-0000000f	1324124609.19
 6	free	1003	2011-12-17 14:32:50	SIP/t_express-00000012	1324125170.23
 8	free	1003	2011-12-17 14:56:47	SIP/t_express-00000018	1324126607.31
@@ -2731,7 +2868,7 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 70	214	\N	\N	\N	Evakuator 2 <214>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
 71	215	\N	\N	\N	Evakuator 3 <215>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
 56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	193.193.194.6
-57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1325874879	192.168.1.114		yes		1	9		sip:201@192.168.1.114:5060	\N	\N	\N
+57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1326021108	192.168.1.114		yes		1	8		sip:201@192.168.1.114:5060	\N	\N	\N
 \.
 
 
@@ -2813,13 +2950,13 @@ COPY permissions (id, direction_id, peer_id) FROM stdin;
 -- Data for Name: route; Type: TABLE DATA; Schema: routing; Owner: asterisk
 --
 
-COPY route (route_id, route_direction_id, route_step, route_type, route_dest_id) FROM stdin;
-4	1	1	trunk	56
-9	3	1	user	57
-7	2	1	tgrp	1
-11	4	1	context	4
-14	5	1	context	6
-15	6	1	trunk	56
+COPY route (route_id, route_direction_id, route_step, route_type, route_dest_id, route_sip_id) FROM stdin;
+4	1	1	trunk	56	\N
+9	3	1	user	57	\N
+7	2	1	tgrp	1	\N
+11	4	1	context	4	\N
+14	5	1	context	6	\N
+15	6	1	trunk	56	\N
 \.
 
 

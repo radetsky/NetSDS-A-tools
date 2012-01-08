@@ -217,13 +217,14 @@ sub _get_callerid {
 
 sub _get_dial_route {
     my $this  = shift;
-    my $exten = shift;
+    my $peername = shift; 
+	my $exten = shift;
     my $try   = shift;
 
     $this->dbh->begin_work or die $this->dbh->errstr;
     my $sth =
-      $this->dbh->prepare("select * from routing.get_dial_route3 (?,?)");
-    eval { my $rv = $sth->execute( $exten, $try ); };
+      $this->dbh->prepare("select * from routing.get_dial_route4 (?,?,?)");
+    eval { my $rv = $sth->execute( $peername, $exten, $try ); };
     if ($@) {
         $this->log( "warning", $this->dbh->errstr );
         $this->agi->verbose( $this->dbh->errstr, 3 );
@@ -645,7 +646,7 @@ sub process {
     # Get dial route
     for ( my $current_try = 1 ; $current_try <= 5 ; $current_try++ ) {
 
-        my $result = $this->_get_dial_route( $this->{extension}, $current_try );
+        my $result = $this->_get_dial_route( $this->{peername}, $this->{extension}, $current_try );
         unless ( defined($result) ) {
             $this->log( "warning",
                 "SOMETHING WRONG. _get_dial_route returns undefined value." );
