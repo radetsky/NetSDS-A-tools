@@ -48,7 +48,7 @@ Some useful tools:
 %build
 
 %install
-mkdir -p %buildroot/usr/share/doc/%origname
+mkdir -p %buildroot/usr/share/doc/%origname/etc/
 mkdir -p %buildroot/usr/bin
 mkdir -p %buildroot/usr/sbin
 mkdir -p %buildroot/usr/lib/asterisk/agi-bin
@@ -78,6 +78,7 @@ install -m750 tftpprovisor.sh %buildroot/usr/bin/
 install -m750 grandstream-config.pl %buildroot/usr/bin/
 cp -ar dialplan %buildroot/usr/share/doc/%origname/
 cp -ar sql %buildroot/usr/share/doc/%origname
+cp -ar etc/asterisk %buildroot/usr/share/doc/%origname/etc/
 
 %post
 %post_service NetSDS-hangupd
