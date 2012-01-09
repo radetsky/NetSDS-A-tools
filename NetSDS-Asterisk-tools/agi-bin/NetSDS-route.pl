@@ -629,6 +629,9 @@ sub process {
     $this->{channel}   = $channel;
     $this->{extension} = $extension;
 
+		# Set timeout(absolute)
+		$this->agi->set_variable("TIMEOUT(absolute)","3600"); 
+
     # Connect to the database
     $this->_db_connect();
 
