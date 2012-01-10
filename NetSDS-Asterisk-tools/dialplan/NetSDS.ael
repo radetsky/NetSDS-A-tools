@@ -111,8 +111,6 @@ macro local-call() {
 //*********************
 
 macro init-call () { 
-    &replace_callerid_num_by_name();
-    &set_callerid_to_nine(); 
     AGI(uuid.pl);
     NoOp(UUID=${UUID});
     Set(MONITOR_FILENAME=${STRFTIME(${EPOCH},,%Y%m%d)}_${UUID});
