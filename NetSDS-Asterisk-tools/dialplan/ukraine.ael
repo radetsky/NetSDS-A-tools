@@ -1,6 +1,6 @@
 context ukraine { 
 	_0XXXXXXXXX => { 
-		&out-call(2002439,${EXTEN},SIP/sitel);
+		&out-call(${MY_CALLERID});
 		Dial(SIP/sitel/${EXTEN},120,tT); 
 		Hangup(); 
 	};

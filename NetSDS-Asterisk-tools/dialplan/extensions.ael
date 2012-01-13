@@ -1,11 +1,15 @@
 // NetStyle's macros 
 #include "dialplan/NetSDS.ael";
 
+// 911 
+#include "dialplan/emergency.ael"; 
+
+
 // Extensions to use for register and unregister in queues.   
 #include "dialplan/queues.ael";
 
 // General user's permissions. 
-#include "dialplan/user.ael": 
+#include "dialplan/user.ael"; 
 
 // Administrator's permissions. Usual general users + channel spy. 
 #include "dialplan/admin.ael";
@@ -29,14 +33,14 @@
 #include "dialplan/mobile_in.ael"; 
 
 // Incoming calls from uplinks 
-#include "dialplan/uplink_in.ael": 
+#include "dialplan/uplink_in.ael";  
 
 // Incoming IVR tree 
-#include "dialplan/ivr.ael";
+//#include "dialplan/ivr.ael";
 
 globals {
-	MY_CALLERID=5949641;
-	UPLINK_TRUNK=SIP/ipshka;
+//	MY_CALLERID=5949641;
+//	UPLINK_TRUNK=SIP/ipshka;
 };
  
 	

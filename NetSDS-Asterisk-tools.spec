@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt12
+Release: alt13
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -107,6 +107,9 @@ cp -ar etc/asterisk %buildroot/usr/share/doc/%origname/etc/
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 
 %changelog
+* Mon Jan 09 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt13
+- Rebuild with new files
+
 * Sun Jan 08 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt12
 - Updated spec
 
