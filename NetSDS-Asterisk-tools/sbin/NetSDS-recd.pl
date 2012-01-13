@@ -24,7 +24,7 @@ use warnings;
 
 NetSDSRecd->run(
     daemon      => undef,
-    verbose     => 1,
+    verbose     => 0,
     use_pidfile => 1,
     has_conf    => 1,
     conf_file   => "/etc/NetSDS/asterisk-router.conf",
@@ -111,8 +111,8 @@ sub _exit {
     my $this   = shift;
     my $errstr = shift;
 
-    $this->log( "error", $errstr );
-	$this->speak ($errstr); 
+    $this->log("warning", $errstr );
+		$this->speak ($errstr); 
     exit(-1);
 }
 
