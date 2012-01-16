@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt13
+Release: alt14
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -59,6 +59,7 @@ mkdir -p %buildroot/etc/asterisk
 mkdir -p %buildroot/etc/NetSDS
 mkdir -p %buildroot%_initdir
 install -m750 etc/NetSDS-hangupd.init %buildroot%_initdir/NetSDS-hangupd
+install -m750 etc/NetSDS-parsequeuelogd.init %buildroot%_initdir/NetSDS-parsequeuelogd
 install -m755 callback.sh %buildroot/usr/bin/
 install -m755 bin/peermod.pl %buildroot/usr/bin/
 install -m755 bin/astconf2sql.pl %buildroot/usr/bin/
@@ -75,6 +76,7 @@ install -m644 sql/asterisk2.sql %buildroot/usr/share/doc/%origname
 install -m644 dialout_examples.ael %buildroot/etc/asterisk
 install -m755 sbin/NetSDS-hangupd.pl %buildroot/usr/sbin/
 install -m755 sbin/NetSDS-recd.pl %buildroot/usr/sbin/
+install -m755 sbin/NetSDS-parsequeuelogd.pl %buildroot/usr/sbin/
 install -m644 etc/NetSDS/asterisk-router.conf %buildroot/etc/NetSDS
 install -m750 tftpprovisor.sh %buildroot/usr/bin/
 install -m750 grandstream-config.pl %buildroot/usr/bin/
@@ -84,9 +86,11 @@ cp -ar etc/asterisk %buildroot/usr/share/doc/%origname/etc/
 
 %post
 %post_service NetSDS-hangupd
+%post_service NetSDS-parsequeuelogd
 
 %preun
 %preun_service NetSDS-hangupd
+%preun_service NetSDS-parsequeuelogd
 
 %files
 /usr/bin/callback.sh
@@ -97,18 +101,26 @@ cp -ar etc/asterisk %buildroot/usr/share/doc/%origname/etc/
 /usr/lib/asterisk/agi-bin/navconnect.sh
 /usr/lib/asterisk/agi-bin/confirm_call.sh
 /usr/lib/asterisk/agi-bin/officepark.pl
+/usr/lib/asterisk/agi-bin/NetSDS-route.pl 
+/usr/lib/asterisk/agi-bin/NetSDS-AGI-integration.pl 
 /usr/bin/make_sip_conf.pl 
 /usr/bin/grandstream-config.pl
 /usr/bin/tftpprovisor.sh
 /usr/sbin/NetSDS-hangupd.pl 
 /usr/sbin/NetSDS-recd.pl
+/usr/sbin/NetSDS-parsequeuelogd.pl 
 /usr/share/doc/NetSDS-Asterisk-tools/*
 /usr/share/doc/NetSDS-Asterisk-tools/NetSDS.ael 
 /etc/asterisk/dialout_examples.ael
 %_initdir/NetSDS-hangupd
+%_initdir/NetSDS-parsequeuelogd
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 
 %changelog
+* Mon Jan 16 2012 Alex Radetsky <rad@rad.kiev.ua> 1.0-alt14 
+- Updated spec 
+- Add new files 
+
 * Mon Jan 09 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt13
 - Rebuild with new files
 

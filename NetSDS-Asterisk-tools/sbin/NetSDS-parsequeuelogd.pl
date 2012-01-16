@@ -64,8 +64,8 @@ use warnings;
 use 5.8.0;
 
 NetSDSParseQueueLog->run(
-    daemon      => undef,
-    verbose     => 1,
+    daemon      => 1,
+    verbose     => undef,
     use_pidfile => 1,
     has_conf    => 1,
     conf_file   => "/etc/NetSDS/asterisk-router.conf",
