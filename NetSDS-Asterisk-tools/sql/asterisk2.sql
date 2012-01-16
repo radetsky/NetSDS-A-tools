@@ -524,7 +524,8 @@ if not found then
 -- Try to find general route record with (route_sip_id = NULL) 
 	select * into r from routing.route 
 		where route_direction_id = dir.dr_list_item 
-		and route_step = $3  
+		and route_step = $3
+		and route_sip_id is NULL   
 		order by route_step asc limit 1; 
 	if not found then 
 		raise exception 'NO ROUTE';
@@ -563,6 +564,16 @@ if r.route_type = 'context' then
 	end if; 
 	return next; 
 	return; 
+end if; 
+
+-- case route_type (lmask) 
+if r.route_type = 'lmask' then 
+	select name into dst_str from public.sip_peers where name=$2; 
+	if not found then 
+		raise exception 'LOCAL USER NOT FOUND';
+	end if; 
+	return next; 
+	return;
 end if; 
 
 -- case route_type (trunkgroup) 
@@ -788,7 +799,7 @@ if NEW.route_type = 'context' then
 		raise exception 'context not found'; 
 	end if ; 
 end if; 
-if NEW.route_type = 'tgroup' then 
+if NEW.route_type = 'tgrp' then 
 	perform tgrp_id from routing.trunkgroups where tgrp_id=NEW.route_dest_id; 
 	if not found then 
 		raise exception 'trunkgroup not found'; 
@@ -1530,7 +1541,7 @@ CREATE TABLE route (
     route_dest_id bigint NOT NULL,
     route_sip_id bigint,
     CONSTRAINT route_route_prio_check CHECK (((route_step >= 0) AND (route_step <= 5))),
-    CONSTRAINT route_type_check CHECK ((((((route_type)::text = 'user'::text) OR ((route_type)::text = 'context'::text)) OR ((route_type)::text = 'trunk'::text)) OR ((route_type)::text = 'tgrp'::text)))
+    CONSTRAINT route_type_check2 CHECK (((((((route_type)::text = 'user'::text) OR ((route_type)::text = 'context'::text)) OR ((route_type)::text = 'trunk'::text)) OR ((route_type)::text = 'tgrp'::text)) OR ((route_type)::text = 'lmask'::text)))
 );
 
 

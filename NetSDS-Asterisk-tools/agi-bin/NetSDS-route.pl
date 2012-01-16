@@ -666,9 +666,9 @@ sub process {
             "dst_str=$dst_str,dst_type=$dst_type,try=$current_try", 3 );
         my $res = undef;
 
-        if ( $dst_type eq "user" ) {
+        if ( ( $dst_type eq "user" ) or ( $dst_type eq "lmask" ) )  {
             $this->agi->verbose( "Dial SIP/$dst_str", 3 );
-            $res = $this->agi->exec( "Dial", "SIP/$dst_str|120|rtT" );
+            $res = $this->agi->exec( "Dial", "SIP/$dst_str|120|tT" );
             $this->agi->verbose( Dumper($res), 3 );
             $this->agi->verbose(
                 "DIALSTATUS=" . $this->agi->get_variable("DIALSTATUS"), 3 );
@@ -676,7 +676,7 @@ sub process {
         if ( $dst_type eq "trunk" ) {
             $this->agi->verbose( "Dial SIP/$dst_str/$extension", 3 );
             $res =
-              $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|rtTg" );
+              $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|tTg" );
             $this->agi->verbose( "result = $res", 3 );
             $this->agi->verbose(
                 "DIALSTATUS=" . $this->agi->get_variable("DIALSTATUS"), 3 );
@@ -693,7 +693,7 @@ sub process {
                 $tgrp_first = $dst_str;
                 $this->agi->verbose("EXEC DIAL SIP/$dst_str/$extension");
                 $res =
-                  $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|rtT" );
+                  $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|tT" );
                 $this->agi->verbose( Dumper($res), 3 );
                 $this->agi->verbose(
                     "DIALSTATUS=" . $this->agi->get_variable("DIALSTATUS"), 3 );
@@ -704,7 +704,7 @@ sub process {
                 next;
             }
             $res =
-              $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|rtT" );
+              $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|tT" );
             $this->agi->verbose( Dumper($res), 3 );
             $this->agi->verbose(
                 "DIALSTATUS=" . $this->agi->get_variable("DIALSTATUS"), 3 );

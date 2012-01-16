@@ -669,7 +669,8 @@ if not found then
 -- Try to find general route record with (route_sip_id = NULL) 
 	select * into r from routing.route 
 		where route_direction_id = dir.dr_list_item 
-		and route_step = $3  
+		and route_step = $3
+		and route_sip_id is NULL   
 		order by route_step asc limit 1; 
 	if not found then 
 		raise exception 'NO ROUTE';
@@ -708,6 +709,16 @@ if r.route_type = 'context' then
 	end if; 
 	return next; 
 	return; 
+end if; 
+
+-- case route_type (lmask) 
+if r.route_type = 'lmask' then 
+	select name into dst_str from public.sip_peers where name=$2; 
+	if not found then 
+		raise exception 'LOCAL USER NOT FOUND';
+	end if; 
+	return next; 
+	return;
 end if; 
 
 -- case route_type (trunkgroup) 
@@ -933,7 +944,7 @@ if NEW.route_type = 'context' then
 		raise exception 'context not found'; 
 	end if ; 
 end if; 
-if NEW.route_type = 'tgroup' then 
+if NEW.route_type = 'tgrp' then 
 	perform tgrp_id from routing.trunkgroups where tgrp_id=NEW.route_dest_id; 
 	if not found then 
 		raise exception 'trunkgroup not found'; 
@@ -994,7 +1005,7 @@ ALTER SEQUENCE recordings_id_seq OWNED BY recordings.id;
 -- Name: recordings_id_seq; Type: SEQUENCE SET; Schema: integration; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('recordings_id_seq', 210, true);
+SELECT pg_catalog.setval('recordings_id_seq', 222, true);
 
 
 --
@@ -1663,7 +1674,7 @@ ALTER SEQUENCE directions_dr_id_seq OWNED BY directions.dr_id;
 -- Name: directions_dr_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('directions_dr_id_seq', 19, true);
+SELECT pg_catalog.setval('directions_dr_id_seq', 20, true);
 
 
 --
@@ -1710,7 +1721,7 @@ ALTER SEQUENCE "directions_list_DLIST_ID_seq" OWNED BY directions_list.dlist_id;
 -- Name: directions_list_DLIST_ID_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('"directions_list_DLIST_ID_seq"', 6, true);
+SELECT pg_catalog.setval('"directions_list_DLIST_ID_seq"', 7, true);
 
 
 --
@@ -1773,7 +1784,7 @@ CREATE TABLE route (
     route_dest_id bigint NOT NULL,
     route_sip_id bigint,
     CONSTRAINT route_route_prio_check CHECK (((route_step >= 0) AND (route_step <= 5))),
-    CONSTRAINT route_type_check CHECK ((((((route_type)::text = 'user'::text) OR ((route_type)::text = 'context'::text)) OR ((route_type)::text = 'trunk'::text)) OR ((route_type)::text = 'tgrp'::text)))
+    CONSTRAINT route_type_check2 CHECK (((((((route_type)::text = 'user'::text) OR ((route_type)::text = 'context'::text)) OR ((route_type)::text = 'trunk'::text)) OR ((route_type)::text = 'tgrp'::text)) OR ((route_type)::text = 'lmask'::text)))
 );
 
 
@@ -1826,7 +1837,7 @@ ALTER SEQUENCE route_route_id_seq OWNED BY route.route_id;
 -- Name: route_route_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('route_route_id_seq', 15, true);
+SELECT pg_catalog.setval('route_route_id_seq', 17, true);
 
 
 --
@@ -2267,6 +2278,18 @@ COPY recordings (id, uline_id, original_file, concatenated, result_file, previou
 208	2	2012/01/06/201646-201.wav	f	\N	0	\N
 209	3	2012/01/06/201659-201.wav	f	\N	0	\N
 210	4	2012/01/08/122437-1003.wav	f	\N	0	\N
+211	6	2012/01/10/142950-201.wav	f	\N	0	\N
+212	7	2012/01/10/143004-201.wav	f	\N	0	\N
+213	8	2012/01/11/152135-201.wav	f	\N	0	\N
+214	9	2012/01/11/152158-201.wav	f	\N	0	\N
+215	10	2012/01/11/152226-201.wav	f	\N	0	\N
+216	11	2012/01/11/152406-201.wav	f	\N	0	\N
+217	12	2012/01/11/152717-201.wav	f	\N	0	\N
+218	13	2012/01/11/153043-201.wav	f	\N	0	\N
+219	14	2012/01/11/153142-201.wav	f	\N	0	\N
+220	15	2012/01/11/153200-201.wav	f	\N	0	\N
+221	17	2012/01/12/122331-201.wav	f	\N	0	\N
+222	18	2012/01/16/120750-201.wav	f	\N	0	\N
 \.
 
 
@@ -2418,7 +2441,7 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 64	free	\N	\N	\N	\N
 65	free	\N	\N	\N	\N
 66	free	\N	\N	\N	\N
-7	free	1003	2011-12-17 14:37:44	SIP/t_express-00000015	1324125464.27
+18	busy	201	2012-01-16 12:07:50	SIP/201-00000021	1326708470.33
 164	free	\N	\N	\N	\N
 165	free	\N	\N	\N	\N
 166	free	\N	\N	\N	\N
@@ -2460,19 +2483,19 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 2	busy	201	2012-01-06 20:16:46	SIP/201-00000002	1325873806.2
 3	busy	201	2012-01-06 20:16:59	SIP/201-00000004	1325873819.4
 4	busy	1003	2012-01-08 12:24:37	SIP/t_express-00000006	1326018277.6
-13	free	201	2011-12-17 15:45:37	SIP/201-00000023	1324129537.46
-15	free	201	2011-12-17 15:45:57	SIP/201-00000025	1324129557.50
-17	free	201	2011-12-17 15:46:27	SIP/201-00000027	1324129587.56
-5	free	1003	2011-12-17 14:23:29	SIP/t_express-0000000f	1324124609.19
-6	free	1003	2011-12-17 14:32:50	SIP/t_express-00000012	1324125170.23
-8	free	1003	2011-12-17 14:56:47	SIP/t_express-00000018	1324126607.31
-9	free	1003	2011-12-17 15:35:18	SIP/t_express-0000001b	1324128918.35
-10	free	1003	2011-12-17 15:38:25	SIP/t_express-0000001e	1324129105.39
-11	free	201	2011-12-17 15:38:36	SIP/201-00000020	1324129116.42
-12	free	1003	2011-12-17 15:45:16	SIP/t_express-00000021	1324129516.43
-14	free	201	2011-12-17 15:45:48	SIP/201-00000024	1324129548.49
-16	free	201	2011-12-17 15:46:16	SIP/201-00000026	1324129576.53
-18	free	1003	2011-12-17 19:54:49	SIP/t_express-00000028	1324144489.57
+5	busy	201	2012-01-10 14:29:47	SIP/201-00000008	1326198587.8
+6	busy	201	2012-01-10 14:29:50	SIP/201-00000009	1326198590.9
+7	busy	201	2012-01-10 14:30:04	SIP/201-0000000c	1326198604.12
+8	busy	201	2012-01-11 15:21:35	SIP/201-0000000e	1326288095.14
+9	busy	201	2012-01-11 15:21:58	SIP/201-00000010	1326288118.16
+10	busy	201	2012-01-11 15:22:26	SIP/201-00000012	1326288146.18
+11	busy	201	2012-01-11 15:24:06	SIP/201-00000014	1326288246.20
+12	busy	201	2012-01-11 15:27:17	SIP/201-00000016	1326288437.22
+13	busy	201	2012-01-11 15:30:43	SIP/201-00000018	1326288643.24
+14	busy	201	2012-01-11 15:31:42	SIP/201-0000001a	1326288702.26
+15	busy	201	2012-01-11 15:32:00	SIP/201-0000001c	1326288720.28
+16	busy	201	2012-01-12 12:23:27	SIP/201-0000001e	1326363807.30
+17	busy	201	2012-01-12 12:23:31	SIP/201-0000001f	1326363811.31
 19	free	1003	2011-12-17 19:55:48	SIP/t_express-0000002a	1324144548.59
 20	free	201	2011-12-17 19:56:10	SIP/201-0000002c	1324144570.61
 \.
@@ -2746,6 +2769,18 @@ COPY cdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, last
 2012-01-06 20:16:29+02	"LINE 1" <201>	201	1003	default	SIP/201-00000000	SIP/t_express-00000001	Hangup	17	0	0	FAILED	3		1325873789.0	1
 2012-01-06 20:16:46+02	"LINE 2" <201>	201	1003	default	SIP/201-00000002	SIP/t_express-00000003	Dial	SIP/t_express/1003|120|rtTg	9	3	ANSWERED	3		1325873806.2	2
 2012-01-06 20:16:59+02	"LINE 3" <201>	201	1001	default	SIP/201-00000004	SIP/t_express-00000005	Dial	SIP/t_express/1001|120|rtTg	13	8	ANSWERED	3		1325873819.4	3
+2012-01-10 14:29:50+02	"LINE 6" <201>	201	1003	default	SIP/201-00000009	SIP/t_express-0000000a	Hangup	17	0	0	FAILED	3		1326198590.9	6
+2012-01-10 14:30:04+02	"LINE 7" <201>	201	5948732	default	SIP/201-0000000c	SIP/t_express-0000000d	Hangup	17	2	0	BUSY	3		1326198604.12	7
+2012-01-11 15:21:35+02	"LINE 8" <201>	201	5948732	default	SIP/201-0000000e	SIP/t_express-0000000f	Hangup	17	2	0	BUSY	3		1326288095.14	8
+2012-01-11 15:21:58+02	"LINE 9" <201>	201	5948732	default	SIP/201-00000010	SIP/t_express-00000011	Hangup	17	2	0	BUSY	3		1326288118.16	9
+2012-01-11 15:22:26+02	"LINE 10" <201>	201	2063505	default	SIP/201-00000012	SIP/t_express-00000013	Hangup	17	3	0	BUSY	3		1326288146.18	10
+2012-01-11 15:24:06+02	"LINE 11" <201>	201	2063505	default	SIP/201-00000014	SIP/t_express-00000015	Hangup	17	3	0	BUSY	3		1326288246.20	11
+2012-01-11 15:27:17+02	"LINE 12" <201>	201	2063505	default	SIP/201-00000016	SIP/t_express-00000017	Hangup	17	2	0	BUSY	3		1326288437.22	12
+2012-01-11 15:30:43+02	"LINE 13" <201>	201	2063505	default	SIP/201-00000018	SIP/t_express-00000019	Dial	SIP/t_express/2063505|120|rtTg	53	0	NO ANSWER	3		1326288643.24	13
+2012-01-11 15:31:42+02	"LINE 14" <201>	201	2063506	default	SIP/201-0000001a	SIP/t_express-0000001b	Dial	SIP/t_express/2063506|120|rtTg	15	0	NO ANSWER	3		1326288702.26	14
+2012-01-11 15:32:00+02	"LINE 15" <201>	201	2063512	default	SIP/201-0000001c	SIP/t_express-0000001d	Dial	SIP/t_express/2063512|120|rtTg	19	0	NO ANSWER	3		1326288720.28	15
+2012-01-12 12:23:31+02	"LINE 17" <201>	201	4559146	default	SIP/201-0000001f	SIP/t_express-00000020	Dial	SIP/t_express/4559146|120|rtTg	57	41	ANSWERED	3		1326363811.31	17
+2012-01-16 12:07:50+02	"LINE 18" <201>	201	3310199	default	SIP/201-00000021	SIP/t_express-00000022	Dial	SIP/t_express/3310199|120|rtTg	59	0	NO ANSWER	3		1326708470.33	18
 2011-12-09 23:59:55+02	"Alex Radetsky" <1003>	1003	201	default	SIP/t_express-00000008	SIP/201-00000009	Dial	SIP/201|120|rtT	6	0	NO ANSWER	3		1323467995.8	
 \.
 
@@ -2868,7 +2903,7 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 70	214	\N	\N	\N	Evakuator 2 <214>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
 71	215	\N	\N	\N	Evakuator 3 <215>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
 56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	193.193.194.6
-57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1326021108	192.168.1.114		yes		1	8		sip:201@192.168.1.114:5060	\N	\N	\N
+57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1326717384	192.168.1.114		yes		1	10		sip:201@192.168.1.114:5060	\N	\N	\N
 \.
 
 
@@ -2913,6 +2948,7 @@ COPY directions (dr_id, dr_list_item, dr_prefix, dr_prio) FROM stdin;
 17	5	^1\\d\\d$	5
 18	1	^1\\d\\d\\d$	5
 19	6	^[2-5]\\d\\d\\d\\d\\d\\d$	5
+20	7	^2\\d\\d$	5
 \.
 
 
@@ -2927,6 +2963,7 @@ COPY directions_list (dlist_id, dlist_name) FROM stdin;
 2	KyivStar
 5	parking slot
 6	Local City (Kyiv)
+7	Local Office 2xx
 \.
 
 
@@ -2957,6 +2994,7 @@ COPY route (route_id, route_direction_id, route_step, route_type, route_dest_id,
 11	4	1	context	4	\N
 14	5	1	context	6	\N
 15	6	1	trunk	56	\N
+17	7	1	lmask	0	\N
 \.
 
 
