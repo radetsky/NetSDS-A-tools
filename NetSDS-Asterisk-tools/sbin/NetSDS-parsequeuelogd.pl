@@ -3,11 +3,11 @@
 #
 #         FILE:  NetSDS-parsequeuelog.pl
 #
-#        USAGE:  service NetSDS-parsequeuelog start 
+#        USAGE:  service NetSDS-parsequeuelog start
 #
-#  DESCRIPTION:  This software parses /var/log/asterisk/queue.log and save results 
-#                to PostgreSQL. 
-#								 Version 2.0 - based on NetSDS::App now. Patched by rad@. 
+#  DESCRIPTION:  This software parses /var/log/asterisk/queue.log and save results
+#                to PostgreSQL.
+#								 Version 2.0 - based on NetSDS::App now. Patched by rad@.
 #
 #      OPTIONS:  ---
 # REQUIREMENTS:  ---
@@ -18,8 +18,8 @@
 #      COMPANY:  Net.Style
 #      VERSION:  2.0
 #      CREATED:  19/12/2010
-#     REVISION:  001 
-#     MODIFIED:  16/01/2012 
+#     REVISION:  001
+#     MODIFIED:  16/01/2012
 #===============================================================================
 
 =item queue_log
@@ -59,37 +59,37 @@ Indexes:
 
 =cut
 
-
 use strict;
-use warnings; 
-use 5.8.0; 
+use warnings;
+use 5.8.0;
 
 NetSDSParseQueueLog->run(
-	daemon => undef, 
-	verbose => 1, 
-	use_pidfile => 1, 
-	has_conf => 1, 
-	conf_file => "/etc/NetSDS/asterisk-router.conf",
-	infinite => undef
-); 
+    daemon      => undef,
+    verbose     => 1,
+    use_pidfile => 1,
+    has_conf    => 1,
+    conf_file   => "/etc/NetSDS/asterisk-router.conf",
+    infinite    => undef
+);
 
-1; 
+1;
 
-package NetSDSParseQueueLog; 
+package NetSDSParseQueueLog;
 
 use 5.8.0;
-use strict; 
-use warnings; 
+use strict;
+use warnings;
 
 use base qw(NetSDS::App);
-use Data::Dumper; 
+use Data::Dumper;
 use DBI;
 use File::Tail;
+use Getopt::Long qw(:config auto_version auto_help pass_through);
 
-sub start { 
-		my $this = shift; 
-	  
-		$SIG{TERM} = sub {
+sub start {
+    my $this = shift;
+
+    $SIG{TERM} = sub {
         exit(-1);
     };
     $SIG{INT} = sub {
@@ -98,6 +98,12 @@ sub start {
 
     $this->mk_accessors('dbh');
     $this->_db_connect();
+
+	my $notail = undef; 
+
+	GetOptions ('notail!' => \$notail); 
+	
+	$this->{'notail'} = $notail; 
 
 }
 
@@ -135,90 +141,122 @@ sub _db_connect {
         exit(-1);
     }
 
-		my $this->{'st_log'} = $this->dbh->prepare("insert into queue_log (time,callid,queuename,agent,event,data) values (to_timestamp(?),?,?,?,?,?)");
-		my $this->{'st_enterqueue'} = $this->dbh->prepare("insert into queue_parsed(time,callid,queue,callerid,agentid,status,success,holdtime,calltime,position) values (to_timestamp(?),?,?,?,?,?,0,0,0,0)");
-		my $this->{'st_abandon'} = $this->dbh->prepare("update queue_parsed set position=?,holdtime=?,status=?,success=0 where callid=?");
-		my $this->{'st_complete'} = $this->dbh->prepare("update queue_parsed set holdtime=?,calltime=?,position=?,status=?,agentid=?,success=1 where callid=?");
-		my $this->{'st_connect'} = $this->dbh->prepare("update queue_parsed set holdtime=?,agentid=?,success=1,status='CONNECT' where callid=?");
+    $this->{'st_log'} = $this->dbh->prepare(
+"insert into queue_log (time,callid,queuename,agent,event,data) values (to_timestamp(?),?,?,?,?,?)"
+    );
+    $this->{'st_enterqueue'} = $this->dbh->prepare(
+"insert into queue_parsed(time,callid,queue,callerid,agentid,status,success,holdtime,calltime,position) values (to_timestamp(?),?,?,?,?,?,0,0,0,0)"
+    );
+    $this->{'st_abandon'} = $this->dbh->prepare(
+"update queue_parsed set position=?,holdtime=?,status=?,success=0 where callid=?"
+    );
+    $this->{'st_complete'} = $this->dbh->prepare(
+"update queue_parsed set holdtime=?,calltime=?,position=?,status=?,agentid=?,success=1 where callid=?"
+    );
+    $this->{'st_connect'} = $this->dbh->prepare(
+"update queue_parsed set holdtime=?,agentid=?,success=1,status='CONNECT' where callid=?"
+    );
 
     return 1;
 }
 
-sub _exit { 
-	my $this = shift; 
-	my $errstr = shift; 
+sub _exit {
+    my $this   = shift;
+    my $errstr = shift;
 
-	$this->speak($errstr);
-	$this->log('warning',$errstr); 
-	
-	exit(-1);
+    $this->speak($errstr);
+    $this->log( 'warning', $errstr );
+
+    exit(-1);
 }
 
-sub process { 
-	my $this = shift;
- 
-	my $filename = $this->{'conf'}->{'queue_log_filename'} || '/var/log/asterisk/queue_log';
-	unless -f $filename { 
-		$this->_exit("File [$filename] does not exists");
-	}
+sub process {
+    my ($this,%params) = @_;
 
-	#FIXME: проверить передачу параметра --notail 
-	my $tail = 1; 
-	if ( defined ( $this->{'notail'} ) ) { 
-		$tail = 0;
-  } 
+    my $filename = '/var/log/asterisk/queue_log';
+    if ( defined( $this->{'conf'}->{'queue_log_filename'} ) ) {
+        $filename = $this->{'conf'}->{'queue_log_filename'};
+    }
 
-	my $ref = undef;
+    unless ( -f $filename ) {
+        $this->_exit("File [$filename] does not exists");
+    }
 
-	if ( $tail ) {
-		$this->speak("Begin to tail $filename");
-		$this->log("info","Begin to tail $filename"); 
+    #FIXME: проверить передачу параметра --notail
+    my $tail = 1;
+    if ( defined( $this->{'notail'} ) ) {
+        $tail = 0;
+    }
 
-		$ref = tie *LOG, "File::Tail",(name=>$filename); # see perldoc File::Tail for fine tuning
-	} else {
-		$this->speak("Single parsing mode for $filename");
-		$this->log("info","Single parsing mode for $filename"); 
-		open LOG, "<$filename" or $this->_exit( "Can't open file [$filename]: $!"); 
-	}
+    my $ref = undef;
 
-	while( <LOG> ) {
-		chomp;
-		my ( $unixtime,$callid,$queue,$agent,$event,@par ) = split /\|/;
-		# Logging
-		$this->{'st_log'}->execute ( $unixtime,$callid,$queue,$agent,$event, join('|',@par ) );
-	
-		# Parsing events
-		if ( $event eq 'ENTERQUEUE') {
-			# New call arrived; catch'em!
-			$par[1] .= ''; # avoid NULL inserts
-			$this->{'st_enterqueue'}->execute($unixtime,$callid,$queue,$par[1],$agent,$event);
-		} elsif ( ( $event eq 'ABANDON') or ($event eq 'EXITEMPTY' ) ) {
-			# The caller abandoned their position in the queue.
-			# The caller was exited from the queue forcefully because the queue had no 
-			# reachable members and it's configured to do that to callers when there 
-			# are no reachable members.
-			my ( $pos, $origpos, $waittime) = @par;
-			$pos += 0; 
-			$waittime += 0;
-			$this->{'st_abandon'}->execute($pos,$waittime,$event,$callid);
-		}	elsif ( ( $event eq 'COMPLETEAGENT' ) or ( $event eq 'COMPLETECALLER' ) ) {
-		# The caller was connected to an agent, and the call was terminated normally by the agent or caller.
-			my($holdtime,$calltime,$pos) = @par;
-			$holdtime+=0;
-			$calltime+=0;
-			$pos+=0;
-			$this->{'st_complete'}->execute($holdtime,$calltime,$pos,$event,$agent,$callid);
-		} elsif ( $event eq 'CONNECT' ) {
-			# The caller was connected to an agent.
-			my $holdtime = $par[0]+0;
-			$this->{'st_connect'}->execute($holdtime,$agent,$callid);
-		} elsif ( $event eq 'EXITWITHKEY') {
-			my $pos = $par[1]+0;
-			$this->{'st_abandon'}->execute($pos,0,$event,$callid);
-		} elsif ($event eq 'EXITWITHTIMEOUT') {
-			my $pos = $par[0]+0;
-			$this->{'st_abandon'}->execute($pos,0,$event,$callid);
-		}
-	} #end while(1)... 
+    if ($tail) {
+        $this->speak("Begin to tail $filename");
+        $this->log( "info", "Begin to tail $filename" );
+
+        $ref = tie *LOG, "File::Tail",
+          ( name => $filename );    # see perldoc File::Tail for fine tuning
+    }
+    else {
+        $this->speak("Single parsing mode for $filename");
+        $this->log( "info", "Single parsing mode for $filename" );
+        open LOG, "<$filename"
+          or $this->_exit("Can't open file [$filename]: $!");
+    }
+
+    while (<LOG>) {
+        chomp;
+        my ( $unixtime, $callid, $queue, $agent, $event, @par ) = split /\|/;
+
+        # Logging
+        $this->{'st_log'}->execute( $unixtime, $callid, $queue, $agent, $event,
+            join( '|', @par ) );
+
+        # Parsing events
+        if ( $event eq 'ENTERQUEUE' ) {
+
+            # New call arrived; catch'em!
+            $par[1] .= '';    # avoid NULL inserts
+            $this->{'st_enterqueue'}
+              ->execute( $unixtime, $callid, $queue, $par[1], $agent, $event );
+        }
+        elsif ( ( $event eq 'ABANDON' ) or ( $event eq 'EXITEMPTY' ) ) {
+
+      # The caller abandoned their position in the queue.
+      # The caller was exited from the queue forcefully because the queue had no
+      # reachable members and it's configured to do that to callers when there
+      # are no reachable members.
+            my ( $pos, $origpos, $waittime ) = @par;
+            $pos      += 0;
+            $waittime += 0;
+            $this->{'st_abandon'}->execute( $pos, $waittime, $event, $callid );
+        }
+        elsif (( $event eq 'COMPLETEAGENT' )
+            or ( $event eq 'COMPLETECALLER' ) )
+        {
+
+# The caller was connected to an agent, and the call was terminated normally by the agent or caller.
+            my ( $holdtime, $calltime, $pos ) = @par;
+            $holdtime += 0;
+            $calltime += 0;
+            $pos      += 0;
+            $this->{'st_complete'}
+              ->execute( $holdtime, $calltime, $pos, $event, $agent, $callid );
+        }
+        elsif ( $event eq 'CONNECT' ) {
+
+            # The caller was connected to an agent.
+            my $holdtime = $par[0] + 0;
+            $this->{'st_connect'}->execute( $holdtime, $agent, $callid );
+        }
+        elsif ( $event eq 'EXITWITHKEY' ) {
+            my $pos = $par[1] + 0;
+            $this->{'st_abandon'}->execute( $pos, 0, $event, $callid );
+        }
+        elsif ( $event eq 'EXITWITHTIMEOUT' ) {
+            my $pos = $par[0] + 0;
+            $this->{'st_abandon'}->execute( $pos, 0, $event, $callid );
+        }
+    }    #end while(1)...
 }
 
