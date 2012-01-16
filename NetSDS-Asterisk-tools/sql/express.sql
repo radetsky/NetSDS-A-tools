@@ -1227,7 +1227,7 @@ ALTER SEQUENCE queue_log_id_seq OWNED BY queue_log.id;
 -- Name: queue_log_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('queue_log_id_seq', 1, false);
+SELECT pg_catalog.setval('queue_log_id_seq', 1, true);
 
 
 --
@@ -1769,7 +1769,7 @@ ALTER SEQUENCE permissions_id_seq OWNED BY permissions.id;
 -- Name: permissions_id_seq; Type: SEQUENCE SET; Schema: routing; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('permissions_id_seq', 11, true);
+SELECT pg_catalog.setval('permissions_id_seq', 31, true);
 
 
 --
@@ -2274,22 +2274,22 @@ COPY recordings (id, uline_id, original_file, concatenated, result_file, previou
 202	1	2012/01/04/202056-1003.wav	t	2012/01/04/202056-1003.mp3	0	204
 204	1	2012/01/04/202103-201.wav	t	2012/01/04/202056-1003.mp3	202	206
 206	1	2012/01/04/202313-201.wav	t	2012/01/04/202056-1003.mp3	204	0
-207	1	2012/01/06/201629-201.wav	f	\N	0	\N
-208	2	2012/01/06/201646-201.wav	f	\N	0	\N
-209	3	2012/01/06/201659-201.wav	f	\N	0	\N
-210	4	2012/01/08/122437-1003.wav	f	\N	0	\N
-211	6	2012/01/10/142950-201.wav	f	\N	0	\N
-212	7	2012/01/10/143004-201.wav	f	\N	0	\N
-213	8	2012/01/11/152135-201.wav	f	\N	0	\N
-214	9	2012/01/11/152158-201.wav	f	\N	0	\N
-215	10	2012/01/11/152226-201.wav	f	\N	0	\N
-216	11	2012/01/11/152406-201.wav	f	\N	0	\N
-217	12	2012/01/11/152717-201.wav	f	\N	0	\N
-218	13	2012/01/11/153043-201.wav	f	\N	0	\N
-219	14	2012/01/11/153142-201.wav	f	\N	0	\N
-220	15	2012/01/11/153200-201.wav	f	\N	0	\N
-221	17	2012/01/12/122331-201.wav	f	\N	0	\N
-222	18	2012/01/16/120750-201.wav	f	\N	0	\N
+207	1	2012/01/06/201629-201.wav	f	\N	0	0
+208	2	2012/01/06/201646-201.wav	f	\N	0	0
+209	3	2012/01/06/201659-201.wav	f	\N	0	0
+210	4	2012/01/08/122437-1003.wav	f	\N	0	0
+211	6	2012/01/10/142950-201.wav	f	\N	0	0
+212	7	2012/01/10/143004-201.wav	f	\N	0	0
+213	8	2012/01/11/152135-201.wav	f	\N	0	0
+214	9	2012/01/11/152158-201.wav	f	\N	0	0
+215	10	2012/01/11/152226-201.wav	f	\N	0	0
+216	11	2012/01/11/152406-201.wav	f	\N	0	0
+217	12	2012/01/11/152717-201.wav	f	\N	0	0
+218	13	2012/01/11/153043-201.wav	f	\N	0	0
+219	14	2012/01/11/153142-201.wav	f	\N	0	0
+220	15	2012/01/11/153200-201.wav	f	\N	0	0
+221	17	2012/01/12/122331-201.wav	f	\N	0	0
+222	18	2012/01/16/120750-201.wav	f	\N	0	0
 \.
 
 
@@ -2441,7 +2441,18 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 64	free	\N	\N	\N	\N
 65	free	\N	\N	\N	\N
 66	free	\N	\N	\N	\N
-18	busy	201	2012-01-16 12:07:50	SIP/201-00000021	1326708470.33
+1	free	201	2012-01-06 20:16:29	SIP/201-00000000	1325873789.0
+2	free	201	2012-01-06 20:16:46	SIP/201-00000002	1325873806.2
+3	free	201	2012-01-06 20:16:59	SIP/201-00000004	1325873819.4
+4	free	1003	2012-01-08 12:24:37	SIP/t_express-00000006	1326018277.6
+5	free	201	2012-01-10 14:29:47	SIP/201-00000008	1326198587.8
+6	free	201	2012-01-10 14:29:50	SIP/201-00000009	1326198590.9
+7	free	201	2012-01-10 14:30:04	SIP/201-0000000c	1326198604.12
+8	free	201	2012-01-11 15:21:35	SIP/201-0000000e	1326288095.14
+9	free	201	2012-01-11 15:21:58	SIP/201-00000010	1326288118.16
+10	free	201	2012-01-11 15:22:26	SIP/201-00000012	1326288146.18
+11	free	201	2012-01-11 15:24:06	SIP/201-00000014	1326288246.20
+12	free	201	2012-01-11 15:27:17	SIP/201-00000016	1326288437.22
 164	free	\N	\N	\N	\N
 165	free	\N	\N	\N	\N
 166	free	\N	\N	\N	\N
@@ -2464,6 +2475,8 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 183	free	\N	\N	\N	\N
 184	free	\N	\N	\N	\N
 185	free	\N	\N	\N	\N
+13	free	201	2012-01-11 15:30:43	SIP/201-00000018	1326288643.24
+14	free	201	2012-01-11 15:31:42	SIP/201-0000001a	1326288702.26
 186	free	\N	\N	\N	\N
 187	free	\N	\N	\N	\N
 188	free	\N	\N	\N	\N
@@ -2479,23 +2492,10 @@ COPY ulines (id, status, callerid_num, cdr_start, channel_name, uniqueid) FROM s
 198	free	\N	\N	\N	\N
 199	free	\N	\N	\N	\N
 200	free	\N	\N	\N	\N
-1	busy	201	2012-01-06 20:16:29	SIP/201-00000000	1325873789.0
-2	busy	201	2012-01-06 20:16:46	SIP/201-00000002	1325873806.2
-3	busy	201	2012-01-06 20:16:59	SIP/201-00000004	1325873819.4
-4	busy	1003	2012-01-08 12:24:37	SIP/t_express-00000006	1326018277.6
-5	busy	201	2012-01-10 14:29:47	SIP/201-00000008	1326198587.8
-6	busy	201	2012-01-10 14:29:50	SIP/201-00000009	1326198590.9
-7	busy	201	2012-01-10 14:30:04	SIP/201-0000000c	1326198604.12
-8	busy	201	2012-01-11 15:21:35	SIP/201-0000000e	1326288095.14
-9	busy	201	2012-01-11 15:21:58	SIP/201-00000010	1326288118.16
-10	busy	201	2012-01-11 15:22:26	SIP/201-00000012	1326288146.18
-11	busy	201	2012-01-11 15:24:06	SIP/201-00000014	1326288246.20
-12	busy	201	2012-01-11 15:27:17	SIP/201-00000016	1326288437.22
-13	busy	201	2012-01-11 15:30:43	SIP/201-00000018	1326288643.24
-14	busy	201	2012-01-11 15:31:42	SIP/201-0000001a	1326288702.26
-15	busy	201	2012-01-11 15:32:00	SIP/201-0000001c	1326288720.28
-16	busy	201	2012-01-12 12:23:27	SIP/201-0000001e	1326363807.30
-17	busy	201	2012-01-12 12:23:31	SIP/201-0000001f	1326363811.31
+15	free	201	2012-01-11 15:32:00	SIP/201-0000001c	1326288720.28
+16	free	201	2012-01-12 12:23:27	SIP/201-0000001e	1326363807.30
+17	free	201	2012-01-12 12:23:31	SIP/201-0000001f	1326363811.31
+18	free	201	2012-01-16 12:07:50	SIP/201-00000021	1326708470.33
 19	free	1003	2011-12-17 19:55:48	SIP/t_express-0000002a	1324144548.59
 20	free	201	2011-12-17 19:56:10	SIP/201-0000002c	1324144570.61
 \.
@@ -2804,6 +2804,7 @@ COPY extensions_conf (id, context, exten, priority, app, appdata) FROM stdin;
 --
 
 COPY queue_log (id, callid, queuename, agent, event, data, "time") FROM stdin;
+1	NONE	NONE	NONE	CONFIGRELOAD		2012-01-15 00:17:02
 \.
 
 
@@ -2903,7 +2904,7 @@ COPY sip_peers (id, name, accountcode, amaflags, callgroup, callerid, canreinvit
 70	214	\N	\N	\N	Evakuator 2 <214>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
 71	215	\N	\N	\N	Evakuator 3 <215>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	\N	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	\N	friend		all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	\N
 56	t_express	\N	\N	\N	\N	no	yes	default	\N	rfc2833	\N	\N	193.193.194.6	port,invite	ru	\N	\N	no	\N	\N	\N	\N		yes	\N	\N	\N	t_wsedr21W	friend	t_express	all	ulaw,alaw	\N	0			yes		1	0	\N	\N	\N	\N	193.193.194.6
-57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1326717384	192.168.1.114		yes		1	10		sip:201@192.168.1.114:5060	\N	\N	\N
+57	201	\N	\N	\N	Express 1 <201>	no	yes	default	\N	rfc2833	\N	\N	dynamic	\N	ru	\N	\N	no	\N	\N	\N	\N	5060	yes	\N	\N	\N	SuperPasswd	friend	201	all	ulaw,alaw	\N	1326748317	192.168.1.114		yes		1	12		sip:201@192.168.1.114:5060	\N	\N	\N
 \.
 
 
@@ -2980,6 +2981,25 @@ COPY permissions (id, direction_id, peer_id) FROM stdin;
 9	5	57
 10	5	56
 11	6	57
+12	5	58
+13	5	59
+14	5	60
+15	5	61
+16	5	62
+17	5	63
+19	5	64
+20	5	65
+21	5	66
+22	5	67
+23	5	68
+24	5	69
+25	5	70
+26	5	71
+27	5	72
+28	5	73
+29	5	74
+30	5	75
+31	5	76
 \.
 
 
