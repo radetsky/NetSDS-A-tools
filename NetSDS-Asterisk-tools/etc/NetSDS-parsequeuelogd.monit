@@ -1,0 +1,8 @@
+check process NetSDS-parsequeuelogd with pidfile /var/drweb/run/NetSDS/NetSDS-parsequeuelogd.pid
+        group asterisk
+        group services
+        start program = "/sbin/service NetSDS-parsequeuelogd start"
+        stop  program = "/sbin/service NetSDS-parsequeuelogd stop"
+        if mem > 20% for 5 cycles then restart
+        if cpu > 90% for 5 cycles then restart
+        if 5 restarts with 5 cycles then timeout

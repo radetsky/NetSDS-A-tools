@@ -1,0 +1,8 @@
+check process NetSDS-hangupd with pidfile /var/drweb/run/NetSDS/NetSDS-hangupd.pid
+        group asterisk
+        group services
+        start program = "/sbin/service NetSDS-hangupd start"
+        stop  program = "/sbin/service NetSDS-hangupd stop"
+        if mem > 20% for 5 cycles then restart
+        if cpu > 90% for 5 cycles then restart
+        if 5 restarts with 5 cycles then timeout
