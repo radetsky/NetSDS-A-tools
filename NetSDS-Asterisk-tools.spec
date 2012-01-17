@@ -21,6 +21,8 @@ BuildRequires: perl-NetSDS-Asterisk
 BuildRequires: perl-IO-Prompt 
 BuildRequires: Nibelite-core
 BuildRequires: perl-File-Tail 
+BuildRequires: perl-asterisk-perl
+BuildRequires: perl-Asterisk-FastAGI
 
 Requires: perl-NetSDS-Asterisk
 Requires: perl-NetSDS
@@ -32,6 +34,8 @@ Requires: perl-IO-Prompt
 Requires: Nibelite-core
 Requires: perl-File-Tail 
 Requires: monit-base
+Requires: perl-asterisk-perl
+Requires: perl-Asterisk-FastAGI
 
 # apt-get install asterisk1.4.42-chan_sip asterisk1.4.42 perl-asterisk-perl asterisk-base-configs asterisk-images asterisk-initscript asterisk-sounds-base asterisk-sounds-ru-base asterisk-user asterisk-base asterisk-keys  asterisk-files-all  asterisk1.4.42 asterisk1.4.42-codec_gsm asterisk1.4.42-ael asterisk1.4.42-docs asterisk-core-sounds-ru-ulaw asterisk-firmware asterisk1.4.42-res_crypto asterisk1.4.42-pgsql 
 
