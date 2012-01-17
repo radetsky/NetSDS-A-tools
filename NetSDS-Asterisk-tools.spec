@@ -58,8 +58,8 @@ mkdir -p %buildroot/usr/lib/asterisk/agi-bin
 mkdir -p %buildroot/etc/cron.daily
 mkdir -p %buildroot/etc/asterisk
 mkdir -p %buildroot/etc/NetSDS
-mkdir -p %buildroot%_initdir
-mkdir -p %buildroot%_sysconfdir/monit.d/
+mkdir -p %buildroot/%_initdir
+mkdir -p %buildroot/%_sysconfdir/monit.d/
 install -m750 etc/NetSDS-hangupd.init %buildroot%_initdir/NetSDS-hangupd
 install -m750 etc/NetSDS-parsequeuelogd.init %buildroot%_initdir/NetSDS-parsequeuelogd
 install -m755 callback.sh %buildroot/usr/bin/
@@ -120,7 +120,7 @@ cp -ar etc/asterisk %buildroot/usr/share/doc/%origname/etc/
 %_initdir/NetSDS-parsequeuelogd
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
 %config(noreplace) %_sysconfdir/monit.d/NetSDS-hangupd
-%config(noreplace) %_sysconfdir/monit.d/NetSDS-parsequeuelogd.monit
+%config(noreplace) %_sysconfdir/monit.d/NetSDS-parsequeuelogd
 
 %changelog
 * Tue Jan 17 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt15
