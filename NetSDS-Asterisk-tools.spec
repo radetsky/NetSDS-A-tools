@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt14
+Release: alt15
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -31,6 +31,7 @@ Requires: perl-Getopt-Mixed
 Requires: perl-IO-Prompt 
 Requires: Nibelite-core
 Requires: perl-File-Tail 
+Requires: monit-base
 
 # apt-get install asterisk1.4.42-chan_sip asterisk1.4.42 perl-asterisk-perl asterisk-base-configs asterisk-images asterisk-initscript asterisk-sounds-base asterisk-sounds-ru-base asterisk-user asterisk-base asterisk-keys  asterisk-files-all  asterisk1.4.42 asterisk1.4.42-codec_gsm asterisk1.4.42-ael asterisk1.4.42-docs asterisk-core-sounds-ru-ulaw asterisk-firmware asterisk1.4.42-res_crypto asterisk1.4.42-pgsql 
 
@@ -58,6 +59,7 @@ mkdir -p %buildroot/etc/cron.daily
 mkdir -p %buildroot/etc/asterisk
 mkdir -p %buildroot/etc/NetSDS
 mkdir -p %buildroot%_initdir
+mkdir -p %buildroot%_sysconfdir/monit.d/
 install -m750 etc/NetSDS-hangupd.init %buildroot%_initdir/NetSDS-hangupd
 install -m750 etc/NetSDS-parsequeuelogd.init %buildroot%_initdir/NetSDS-parsequeuelogd
 install -m755 callback.sh %buildroot/usr/bin/
@@ -80,6 +82,8 @@ install -m755 sbin/NetSDS-parsequeuelogd.pl %buildroot/usr/sbin/
 install -m644 etc/NetSDS/asterisk-router.conf %buildroot/etc/NetSDS
 install -m750 tftpprovisor.sh %buildroot/usr/bin/
 install -m750 grandstream-config.pl %buildroot/usr/bin/
+install -m 640 etc/NetSDS-hangupd.monit %buildroot/etc/monit.d/NetSDS-hangupd
+install -m 640 etc/NetSDS-parsequeuelogd.monit %buildroot/etc/monit.d/NetSDS-parsequeuelogd
 cp -ar dialplan %buildroot/usr/share/doc/%origname/
 cp -ar sql %buildroot/usr/share/doc/%origname
 cp -ar etc/asterisk %buildroot/usr/share/doc/%origname/etc/
@@ -115,8 +119,13 @@ cp -ar etc/asterisk %buildroot/usr/share/doc/%origname/etc/
 %_initdir/NetSDS-hangupd
 %_initdir/NetSDS-parsequeuelogd
 %config(noreplace) %_sysconfdir/NetSDS/asterisk-router.conf
+%config(noreplace) %_sysconfdir/monit.d/NetSDS-hangupd
+%config(noreplace) %_sysconfdir/monit.d/NetSDS-parsequeuelogd.monit
 
 %changelog
+* Tue Jan 17 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt15
+- Added monit rules
+
 * Mon Jan 16 2012 Alex Radetsky <rad@rad.kiev.ua> 1.0-alt14 
 - Updated spec 
 - Add new files 
