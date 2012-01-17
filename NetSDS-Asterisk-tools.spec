@@ -4,7 +4,7 @@
 Name: %origname
 Summary: Asterisk tools: callback, voicefile-rotate
 Version: %version
-Release: alt15
+Release: alt16
 License: GPL
 Group: Development/Perl
 BuildArch: noarch
@@ -127,6 +127,9 @@ cp -ar etc/asterisk %buildroot/usr/share/doc/%origname/etc/
 %config(noreplace) %_sysconfdir/monit.d/NetSDS-parsequeuelogd
 
 %changelog
+* Tue Jan 17 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt16
+- Fixed bug in monit rules.
+
 * Tue Jan 17 2012 Dmitriy Kruglikov <drk@altlinux.ru> 1.0-alt15
 - Added monit rules
 

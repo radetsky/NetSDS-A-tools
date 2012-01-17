@@ -1,4 +1,4 @@
-check process NetSDS-parsequeuelogd with pidfile /var/drweb/run/NetSDS/NetSDS-parsequeuelogd.pid
+check process NetSDS-parsequeuelogd with pidfile /var/run/NetSDS/NetSDS-parsequeuelogd.pid
         group asterisk
         group services
         start program = "/sbin/service NetSDS-parsequeuelogd start"
