@@ -648,7 +648,7 @@ sub process {
 
     # Get dial route
     for ( my $current_try = 1 ; $current_try <= 5 ; $current_try++ ) {
-
+	$this->agi->verbose ( "Call _get_dial_route(".$this->{peername}.",".$this->{extension}.",".$current_try.")",3); 
         my $result = $this->_get_dial_route( $this->{peername}, $this->{extension}, $current_try );
         unless ( defined($result) ) {
             $this->log( "warning",
@@ -669,7 +669,7 @@ sub process {
         if ( ( $dst_type eq "user" ) or ( $dst_type eq "lmask" ) )  {
             $this->agi->verbose( "Dial SIP/$dst_str", 3 );
             $res = $this->agi->exec( "Dial", "SIP/$dst_str|120|tT" );
-            $this->agi->verbose( Dumper($res), 3 );
+            $this->agi->verbose( "result = $res", 3 );
             $this->agi->verbose(
                 "DIALSTATUS=" . $this->agi->get_variable("DIALSTATUS"), 3 );
         }
@@ -689,23 +689,27 @@ sub process {
         }
 
         if ( $dst_type eq 'tgrp' ) {
-            unless ( defined($tgrp_first) ) {
+            unless ( defined ($tgrp_first) ) {
                 $tgrp_first = $dst_str;
+		$this->agi->verbose("tgrp_first = $dst_str",3); 
                 $this->agi->verbose("EXEC DIAL SIP/$dst_str/$extension");
                 $res =
-                  $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|tT" );
-                $this->agi->verbose( Dumper($res), 3 );
+                  $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|tTg" );
+                $this->agi->verbose( "result = $res", 3 );
                 $this->agi->verbose(
                     "DIALSTATUS=" . $this->agi->get_variable("DIALSTATUS"), 3 );
                 next;
             }
             if ( $dst_str eq $tgrp_first ) {
                 $current_try = $current_try + 1;
+		$tgrp_first = undef; 
+		$this->agi->verbose("$dst_str = $tgrp_first. current_try++ = $current_try",3);
                 next;
             }
+	    $this->agi->verbose("current_try = $current_try"); 
             $res =
-              $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|tT" );
-            $this->agi->verbose( Dumper($res), 3 );
+              $this->agi->exec( "Dial", "SIP/$dst_str/$extension|120|tTg" );
+            $this->agi->verbose( "result = $res", 3 );
             $this->agi->verbose(
                 "DIALSTATUS=" . $this->agi->get_variable("DIALSTATUS"), 3 );
         }
