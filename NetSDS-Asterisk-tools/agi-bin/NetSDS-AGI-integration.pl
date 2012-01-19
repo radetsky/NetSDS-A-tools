@@ -190,14 +190,10 @@ sub _get_iinfo {
     return $result;
 
 }
-
-sub _open_blank_taxi_office {
+sub _open_blank_taxi_navigator {
     my $this  = shift;
     my $iinfo = shift;
-
-	if ( $this->{'debug'} ) {
-		$this->log("info","Start TaxiOffice open blank");
-	}
+    my $sip_name = shift; 
 
     my $socket = IO::Socket::INET->new (
         PeerAddr => $iinfo->{'ip_addr_pc'},
@@ -206,7 +202,45 @@ sub _open_blank_taxi_office {
         Timeout  => 1
     );
 
-	$this->log("info", Dumper ($socket)); 
+    unless ($socket) {
+        $this->_exit( "CAN'T CONNECT TO "
+              . $iinfo->{'ip_addr_pc'} . ":"
+              . $iinfo->{'tcp_port'} );
+    }
+
+    my $callerid = $this->agi->get_variable("CALLERID(num)");
+    my $calleridlen = length($callerid);
+    $callerid = substr($callerid,$calleridlen-10,10); 
+    my $uline    = $this->agi->get_variable("PARKINGEXTEN");
+
+    my $command = sprintf( "Message: ActivateCard. Operator: %s CallerID: %s \n\n", $sip_name, $callerid );
+
+    if ( $socket->print($command) ) {
+        $socket->flush;
+	my @result = $socket->getlines; 
+	$this->agi->verbose ( Dumper (\@result), 3); 
+    }
+    else {
+        $this->_exit( "CAN'T WRITE TO THE SOCKET "
+              . $iinfo->{'ip_addr_pc'} . ":"
+              . $iinfo->{'port'} );
+    }
+    $this->log("info","Sent ($command) to ".$iinfo->{'ip_addr_pc'}.":".$iinfo->{'tcp_port'});
+    undef $socket;
+
+}
+
+
+sub _open_blank_taxi_office {
+    my $this  = shift;
+    my $iinfo = shift;
+
+    my $socket = IO::Socket::INET->new (
+        PeerAddr => $iinfo->{'ip_addr_pc'},
+        PeerPort => $iinfo->{'tcp_port'},
+        Proto    => "tcp",
+        Timeout  => 1
+    );
 
     unless ($socket) {
         $this->_exit( "CAN'T CONNECT TO "
@@ -214,11 +248,9 @@ sub _open_blank_taxi_office {
               . $iinfo->{'tcp_port'} );
     }
 
-	if ( $this->{'debug'} ) { 
-		$this->log("info",Dumper($socket)); 
-	}
-	
     my $callerid = $this->agi->get_variable("CALLERID(num)");
+    my $calleridlen = length($callerid);
+    $callerid = substr($callerid,$calleridlen-10,10); 
     my $uline    = $this->agi->get_variable("PARKINGEXTEN");
 
     my $command = sprintf( "COF\r\n%s\r\n-\r\n%s", $callerid, $uline );
@@ -229,9 +261,9 @@ sub _open_blank_taxi_office {
     else {
         $this->_exit( "CAN'T WRITE TO THE SOCKET "
               . $iinfo->{'ip_addr_pc'} . ":"
-              . $iinfo->{'port'} );
+              . $iinfo->{'tcp_port'} );
     }
-	$this->log("info","Sent ($command) to ".$iinfo->{'ip_addr_pc'}.":".$iinfo->{'port'});
+	$this->log("info","Sent ($command) to ".$iinfo->{'ip_addr_pc'}.":".$iinfo->{'tcp_port'});
     undef $socket;
 
 }
@@ -275,11 +307,16 @@ sub process {
     # Currently we support only TaxiOffice mode.
 
     if ( $itype =~ /^TaxiOffice$/i ) {
-		if ($this->{debug}){
-			 $this->log("info","Calling TaxiOffice open blank");
-		}
+	$this->log("info","Calling TaxiOffice open blank");
         $this->_open_blank_taxi_office($iinfo);
     }
+
+    if ( $itype =~ /^TaxiNavigator$/i ) {
+	$this->log("info","Calling TaxiNavigator open blank");
+        $this->_open_blank_taxi_navigator($iinfo, $sip_name);
+    }
+
+
 }
 
 1;
