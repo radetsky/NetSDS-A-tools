@@ -281,10 +281,13 @@ sub _init_mixmonitor {
 
     $this->agi->verbose("CallerID(num)+CDR(start)=$callerid_num $cdr_start");
     $this->_init_uline( $callerid_num, $cdr_start );
+
+    if (length ($this->{'exten'}) < 4 ) { 
     if ( ( $this->{'exten'} > 0 ) and ( $this->{'exten'} < 200 ) ) {
         $this->_add_next_recording( $callerid_num, $cdr_start,
             $this->{'exten'} );
     }
+    } 
 
 }
 
@@ -390,9 +393,10 @@ sub _add_new_recording {
     my $new_id = $result->{'id'};
     $this->dbh->commit;
 
-	$this->agi->verbose("Added new recording to uline $uline with $cdr_start and $callerid_num",3); 
-	$this->log("info","Added new recording to uline $uline with $cdr_start and $callerid_num"); 
+    $this->agi->verbose("Added new recording to uline $uline with $cdr_start and $callerid_num",3); 
+    $this->log("info","Added new recording to uline $uline with $cdr_start and $callerid_num"); 
 
+    return undef; 
 }
 
 sub _add_next_recording {
@@ -468,7 +472,7 @@ sub _init_uline {
 
     if ( $this->{debug} ) {
         $this->log( "info", "_init_uline: $callerid_num $cdr_start" );
-		$this->agi->verbose("_init_uline: $callerid_num $cdr_start", 3);  
+	$this->agi->verbose("_init_uline: $callerid_num $cdr_start", 3);  
     }
 
     # Try to find existing channel
@@ -482,6 +486,7 @@ sub _init_uline {
 
     # Try to find by ULINE (userfield)
     my $userfield = $this->agi->get_variable("CDR(userfield)");
+    if ( defined ( $userfield ) ) { 
     $this->log( "info", "CDR(userfield)=" . $userfield );
     $uline = $this->_uline_by_userfield_and_start( $userfield, $cdr_start );
 	if ( defined ( $uline ) ) { 
@@ -491,10 +496,10 @@ sub _init_uline {
 		} 
 		return; 
 	} 
-
+    } 
     # Create new uline
-	$this->agi->verbose("Create new ULINE",3); 
-	
+    $this->agi->verbose("Create new ULINE",3); 
+    $this->log("info","Create new ULINE"); 	
 	$this->_begin;
 
     my $sth =
@@ -514,11 +519,14 @@ sub _init_uline {
     $uline = $result->{'get_free_uline'};
 
     $this->agi->verbose( "ULINE=$uline", 3 );
+    $this->log("info", "ULINE=$uline");
+    
     $this->agi->set_variable( "PARKINGEXTEN",   "$uline" );
     $this->agi->set_variable( "CDR(userfield)", "$uline" );
     $this->agi->set_variable( "ULINE",          "$uline" );
     $this->agi->exec( "Set", "CALLERID(name)=LINE $uline" );
-
+    $this->log("info","CALLERID(name)=LINE $uline" );
+    
     $sth = $this->dbh->prepare(
 "update integration.ulines set status='busy',callerid_num=?,cdr_start=?,channel_name=?,uniqueid=? where id=?"
     );

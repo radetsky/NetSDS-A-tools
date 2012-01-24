@@ -8,9 +8,9 @@ MAC=
 MODE="comandline"
 
 TFTPDIR="/var/lib/tftpboot"
-NTPSERVER="192.168.1.98"
-SIPSERVER="192.168.1.98"
-PHONEBOOK="192.168.1.111"
+NTPSERVER="192.168.0.100"
+SIPSERVER="192.168.0.101"
+PHONEBOOK="192.168.0.101"
 
 clear_vars(){
     EXT=
@@ -58,9 +58,11 @@ cat > ${TFTPDIR}/cfg${MAC}.txt <<EOF
 #--------------------------------------------------------------------------------------
 P91 = 1
 # Account Active (In Use). 0 - no, 1 - yes
+P401 = 0
+# Account Second is not active 
 P271 = 1
 # Account Name
-P270 = ${NAME}
+# P270 = ${NAME}
 # SIP Server
 P47 = ${SIPSERVER}
 # Outbound Proxy
@@ -73,6 +75,8 @@ P34 = ${PASS}
 P36 = ${EXT}
 # Display Name (John Doe)
 P3 = ${NAME}
+# Config server 
+P237 = ${SIPSERVER}
 #--------------------------------------------------------------------------------------
 # End User Time settings
 #--------------------------------------------------------------------------------------
@@ -110,7 +114,7 @@ compile_GXP1200_config(){
 }
 
 read_from_db(){
-psql -U asterisk -A -t -c 'select a.name,a.secret,a.callerid,b.teletype,b.mac_addr_tel from public.sip_peers a, integration.workplaces b where a.id=b.sip_id' | \
+psql -U asterisk -h 192.168.0.164 -A -t -c 'select a.name,a.secret,a.callerid,b.teletype,b.mac_addr_tel from public.sip_peers a, integration.workplaces b where a.id=b.sip_id' | \
   while read str; do
     echo $str | tr "|" ":" |\
     while IFS=":" read Extn Upass Dname Model Mac; do
