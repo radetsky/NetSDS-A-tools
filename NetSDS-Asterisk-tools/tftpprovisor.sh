@@ -56,7 +56,7 @@ cat > ${TFTPDIR}/cfg${MAC}.txt <<EOF
 #--------------------------------------------------------------------------------------
 # Primary Account (Account 1) Settings
 #--------------------------------------------------------------------------------------
-P91 = 1
+P91 = 0
 # Account Active (In Use). 0 - no, 1 - yes
 P401 = 0
 # Account Second is not active 
@@ -85,6 +85,10 @@ P237 = ${SIPSERVER}
 P64=840
 # Time Display Format. 0 - 12 Hour, 1 - 24 Hour
 P122 = 1
+# Daylight Savings Time
+P75 = 1
+P102 = 2
+
 # NTP Server
 P30 = ${NTPSERVER}
 # Enable Downloadable Phonebook (P330): NO/YES-HTTP/YES-TFTP
