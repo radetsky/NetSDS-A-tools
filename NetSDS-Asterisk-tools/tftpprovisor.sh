@@ -4,6 +4,7 @@ EXT=
 PASS=
 NAME=
 MODEL=
+SUBMODEL=
 MAC=
 
 clear_vars(){
@@ -11,14 +12,15 @@ clear_vars(){
     PASS=
     NAME=
     MODEL=
+    SUBMODEL=
     MAC=
 }
 
-generate_SPA502G_config() {
+generate_SPA_config() {
 
-[ -d ${TFTPDIR}/SPA502G ] || mkdir -p ${TFTPDIR}/SPA502G
+[ -d ${TFTPDIR}/SPA${SUBMODEL} ] || mkdir -p ${TFTPDIR}/SPA${SUBMODEL}
 
-cat > ${TFTPDIR}/SPA502G/${MAC}.xml <<EOF
+cat > ${TFTPDIR}/SPA${SUBMODEL}/${MAC}.xml <<EOF
 <flat-profile>
   <User_ID_1_ group="Ext_1/Subscriber_Information">${EXT}</User_ID_1_>
   <Password_1_ group="Ext_1/Subscriber_Information">${PASS}</Password_1_>
@@ -38,7 +40,7 @@ cat > ${TFTPDIR}/SPA502G/${MAC}.xml <<EOF
 </flat-profile>
 EOF
 
-chmod 777 ${TFTPDIR}/SPA502G/${MAC}.xml 
+chmod 777 ${TFTPDIR}/SPA${SUBMODEL}/${MAC}.xml 
 clear_vars
 
 }
@@ -123,7 +125,12 @@ psql -U ${PSQLUSER} -h ${PSQLHOST} -A -t -c 'select a.name,a.secret,a.callerid,b
                 generate_GXP1200_config
                 ;;
             $(echo $MODEL | grep -ic SPA502G ) )
-                generate_SPA502G_config
+        	SUBMODEL="502G"
+                generate_SPA_config
+                ;;
+            $(echo $MODEL | grep -ic SPA504G ) )
+        	SUBMODEL="504G"
+                generate_SPA_config
                 ;;
         esac
     done
@@ -198,7 +205,12 @@ else
                 generate_GXP1200_config
                 ;;
             $(echo $MODEL | grep -ic SPA502G ) )
-                generate_SPA502G_config
+        	SUBMODEL="502G"
+                generate_SPA_config
+                ;;
+            $(echo $MODEL | grep -ic SPA504G ) )
+        	SUBMODEL="504G"
+                generate_SPA_config
                 ;;
             * )
             echo "Unknown model. Tell about software autor"
