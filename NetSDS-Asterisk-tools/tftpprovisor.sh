@@ -5,12 +5,6 @@ PASS=
 NAME=
 MODEL=
 MAC=
-MODE="comandline"
-
-TFTPDIR="/var/lib/tftpboot"
-NTPSERVER="192.168.0.100"
-SIPSERVER="192.168.0.101"
-PHONEBOOK="192.168.0.101"
 
 clear_vars(){
     EXT=
@@ -56,11 +50,12 @@ cat > ${TFTPDIR}/cfg${MAC}.txt <<EOF
 #--------------------------------------------------------------------------------------
 # Primary Account (Account 1) Settings
 #--------------------------------------------------------------------------------------
+# Do not disable call waiting
 P91 = 0
 # Account Active (In Use). 0 - no, 1 - yes
-P401 = 0
-# Account Second is not active 
 P271 = 1
+# Account Second is not active 
+P401 = 0
 # Account Name
 # P270 = ${NAME}
 # SIP Server
@@ -82,13 +77,9 @@ P237 = ${SIPSERVER}
 #--------------------------------------------------------------------------------------
 # Time Zone. Offset in minutes to GMT 
 # ( Offset from GMT in minutes + 720, IE: MST (GMT - 7 hours) = -420 + 720 = 300 )
-P64=840
+P64=${TIMEOFFSET}
 # Time Display Format. 0 - 12 Hour, 1 - 24 Hour
-P122 = 1
-# Daylight Savings Time
-P75 = 1
-P102 = 2
-
+P122 = ${TIMEDISPLAYFORMAT}
 # NTP Server
 P30 = ${NTPSERVER}
 # Enable Downloadable Phonebook (P330): NO/YES-HTTP/YES-TFTP
@@ -118,23 +109,23 @@ compile_GXP1200_config(){
 }
 
 read_from_db(){
-psql -U asterisk -h 192.168.0.164 -A -t -c 'select a.name,a.secret,a.callerid,b.teletype,b.mac_addr_tel from public.sip_peers a, integration.workplaces b where a.id=b.sip_id' | \
+psql -U ${PSQLUSER} -h ${PSQLHOST} -A -t -c 'select a.name,a.secret,a.callerid,b.teletype,b.mac_addr_tel from public.sip_peers a, integration.workplaces b where a.id=b.sip_id' | \
   while read str; do
     echo $str | tr "|" ":" |\
     while IFS=":" read Extn Upass Dname Model Mac; do
-	EXT=$Extn
-	PASS=$Upass
-	NAME=$(echo $Dname | awk '{print $1,$2}')
-	MODEL=$Model
-	MAC=$Mac
-	case 1 in 
-	    $(echo $MODEL | grep -ic GXP1200 ) )
-		generate_GXP1200_config
-		;;
-	    $(echo $MODEL | grep -ic SPA502G ) )
-		generate_SPA502G_config
-		;;
-	esac
+        EXT=$Extn
+        PASS=$Upass
+        NAME=$(echo $Dname | awk '{print $1,$2}')
+        MODEL=$Model
+        MAC=$Mac
+        case 1 in 
+            $(echo $MODEL | grep -ic GXP1200 ) )
+                generate_GXP1200_config
+                ;;
+            $(echo $MODEL | grep -ic SPA502G ) )
+                generate_SPA502G_config
+                ;;
+        esac
     done
  done
 }
@@ -158,6 +149,26 @@ or
 EOF
 }
 
+if [ -f /etc/NetSDS/tftpprovisor.conf ];then
+. /etc/NetSDS/tftpprovisor.conf
+else
+    echo "Configuration not found"
+    echo "Copmlete configuration in /etc/NetSDS/tftpprovisor.conf and run $(basename $0) again "
+    mkdir -p /etc/NetSDS/
+    cat > /etc/NetSDS/tftpprovisor.conf <<EOF
+MODE="comandline"
+TFTPDIR="/var/lib/tftpboot"
+NTPSERVER=""
+SIPSERVER=""
+PHONEBOOK=""
+TIMEDISPLAYFORMAT="1"
+TIMEOFFSET="840"
+PSQLUSER=""
+PSQLHOST=""
+EOF
+    exit 1
+fi
+
 getoptarg="hc:m:s:e:p:M:I"
 
 while getopts $getoptarg opt
@@ -169,7 +180,7 @@ do
         e) EXT="$OPTARG";;
         p) PASS="$OPTARG";;
         M) MAC=$(echo "$OPTARG" | tr "[A-Z]" "[a-z]" | tr -d ":");;
-	I) MODE="auto"
+        I) MODE="auto"
     esac
 done
 
@@ -178,21 +189,20 @@ if [ "$MODE" = "auto" ];then
     read_from_db
 else
     if [ -z "${MAC}" -o -z "${EXT}" -o -z "${PASS}" -o -z "${SIP}" -o -z "${MODEL}" ]; then
-	legend
-	echo "Error: Missing one from required parameters."
-	exit 1
+        legend
+        echo "Error: Missing one from required parameters."
+        exit 1
     else
-	case 1 in 
-	    $(echo $MODEL | grep -ic GXP1200 ) )
-		generate_GXP1200_config
-		;;
-	    $(echo $MODEL | grep -ic SPA502G ) )
-		
-		generate_SPA502G_config
-		;;
-	    * )
-	    echo "Unknown model. Tell about software autor"
-	    ;;
-	esac
+        case 1 in 
+            $(echo $MODEL | grep -ic GXP1200 ) )
+                generate_GXP1200_config
+                ;;
+            $(echo $MODEL | grep -ic SPA502G ) )
+                generate_SPA502G_config
+                ;;
+            * )
+            echo "Unknown model. Tell about software autor"
+            ;;
+        esac
     fi
 fi
