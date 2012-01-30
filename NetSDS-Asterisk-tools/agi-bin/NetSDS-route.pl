@@ -204,6 +204,7 @@ sub _get_callerid {
 "$peername have to set CallerID to \'$callerid\' while calling to $exten"
         );
         $this->agi->exec( "Set", "CALLERID(num)=$callerid" );
+				$this->{'calleridnum'} = $callerid;  
     }
     else {
         $this->agi->verbose( "$peername does not change own CallerID", 3 );
@@ -271,24 +272,14 @@ sub _init_mixmonitor {
 
     mkpath($directory);
 
-    if ( $this->{'exten'} > 0 ) {
-        $this->agi->exec( "MixMonitor", "$filename" );
-    }
-    else {
-        $this->agi->verbose(
-            "This channel going to park. We do not Monitor it.");
-    }
+    if ( ( $this->{'exten'} = 0 ) || ( $this->{'exten'} eq '0') ) {
+		      $this->agi->verbose ( "This channel going to park. We do not Monitor it." );
+   				# Мы не пишем то, что отправляется на парковку. Нет смысла. 
+    } else {
+         $this->agi->exec( "MixMonitor", "$filename" );
+	  }
 
-    $this->agi->verbose("CallerID(num)+CDR(start)=$callerid_num $cdr_start");
-    $this->_init_uline( $callerid_num, $cdr_start );
-
-    if (length ($this->{'exten'}) < 4 ) { 
-    if ( ( $this->{'exten'} > 0 ) and ( $this->{'exten'} < 200 ) ) {
-        $this->_add_next_recording( $callerid_num, $cdr_start,
-            $this->{'exten'} );
-    }
-    } 
-
+   
 }
 
 sub _begin {
@@ -464,6 +455,7 @@ sub _update_uline_by_new_channel {
 }
 
 sub _init_uline {
+
     my $this         = shift;
     my $callerid_num = shift;
     my $cdr_start    = shift;
@@ -471,36 +463,50 @@ sub _init_uline {
     my $channel      = $this->{'channel'};
 
     if ( $this->{debug} ) {
-        $this->log( "info", "_init_uline: $callerid_num $cdr_start" );
-	$this->agi->verbose("_init_uline: $callerid_num $cdr_start", 3);  
+        $this->log( "info", "start _init_uline: $callerid_num $cdr_start" );
+				$this->agi->verbose("start _init_uline: $callerid_num $cdr_start", 3);  
     }
 
     # Try to find existing channel
     my $uline = $this->_uline_by_channel($channel);
+		
     if ( defined ( $uline ) ) { 
-		if ($this->{'exten'} > 0) { 
-        	$this->_add_next_recording( $callerid_num, $cdr_start, $uline );
-		} 
-        return;
+			if ($this->{'exten'} > 0) { 
+  	      	$this->_add_next_recording( $callerid_num, $cdr_start, $uline );
+						return;
+			} 
     }
 
     # Try to find by ULINE (userfield)
     my $userfield = $this->agi->get_variable("CDR(userfield)");
     if ( defined ( $userfield ) ) { 
-    $this->log( "info", "CDR(userfield)=" . $userfield );
-    $uline = $this->_uline_by_userfield_and_start( $userfield, $cdr_start );
-	if ( defined ( $uline ) ) { 
-		$this->_update_uline_by_new_channel( $uline, $channel );
-		if ( $this->{'exten'} > 0 ) { 
-			$this->_add_next_recording( $callerid_num, $cdr_start, $uline );
-		} 
-		return; 
-	} 
-    } 
-    # Create new uline
+    	my $trimmed_userfield = str_trim ( $userfield );
+
+			if ( $trimmed_userfield ne '' ) { 
+			  # Если userfield не пустой, тогда пытаемся что-то найти. 
+				if ($this->{debug} ) { 
+					$this->log( "info", "current CDR(userfield)=" . $userfield );
+					$this->agi->verbose("current CDR(userfield)=" . $userfield , 3); 
+				}
+
+    		$uline = $this->_uline_by_userfield_and_start( $userfield, $cdr_start );
+
+				if ( defined ( $uline ) ) { 
+					# Неужели нашли ? Обновим информацию.
+					$this->_update_uline_by_new_channel( $uline, $channel );
+					# Если мы звоним не на парковку, то дополняем запись. 
+					if ( $this->{'exten'} > 0 ) { 
+						$this->_add_next_recording( $callerid_num, $cdr_start, $uline );
+					} 
+					return; 
+				} 
+    	} 
+    }
+		# Не нашли, ни по идентификатору канала, ни по cdr_start+userfield.
+		# Create new uline
     $this->agi->verbose("Create new ULINE",3); 
     $this->log("info","Create new ULINE"); 	
-	$this->_begin;
+		$this->_begin;
 
     my $sth =
       $this->dbh->prepare("select * from integration.get_free_uline();");
@@ -525,6 +531,7 @@ sub _init_uline {
     $this->agi->set_variable( "CDR(userfield)", "$uline" );
     $this->agi->set_variable( "ULINE",          "$uline" );
     $this->agi->exec( "Set", "CALLERID(name)=LINE $uline" );
+		$this->{'calleridname'} = "LINE $uline";
     $this->log("info","CALLERID(name)=LINE $uline" );
     
     $sth = $this->dbh->prepare(
@@ -620,6 +627,75 @@ sub _get_status {
     return @replies;
 }
 
+sub _set_callerid { 
+	  my $this = shift; 
+
+	  my $calleridnum = $this->{'calleridnum'}; 
+		my $calleridname = $this->{'calleridname'}; 
+
+		$this->agi->exec("Set","CALLERID(name)=$calleridname $calleridnum");
+
+}
+
+sub _convert_extension { 
+		my $this = shift; 
+		my $result = undef; 
+
+	  my $sth = $this->dbh->prepare ("select id,exten,operation,parameters,step from routing.convert_exten where ? ~ exten order by id,step"); 
+	  eval { my $rv = $sth->execute($this->{'exten'}); };
+		if ($@) {
+				$this->_exit($this->dbh->errstr); 
+		}
+
+		eval { 
+			$result = $sth->fetchall_hashref ('id'); 
+		}; 
+		if ($@) { 
+			$this->_exit($this->dbh->errstr);
+		} 
+		unless ( defined ( $result ) ) { 
+				return undef; 
+		}
+		if ( $result == {} ) { 
+				return undef; 
+		}
+		foreach my $id ( sort keys %$result ) { 
+				my $operation = $result->{$id}->{'operation'};
+				my $parameters = $result->{$id}->{'parameters'}; 
+				my ($param1,$param2) = split (':',$parameters);
+			  if ($operation =~ /concat/ ) { 
+					if ($this->{debug}) { 
+				  	$this->log("info","convert extension: concat '$param1':'$param2'");
+					}
+					# second param contains 'begin' or 'end'	
+					if ($param2 =~ /begin/) { 
+						$this->{'exten'} = $param1 . $this->{'exten'}; 
+					} 
+					if ($param2 =~ /end/ ) { 
+						$this->{'exten'} = $this->{'exten'} . $param1; 
+					}
+				}
+				if ($operation =~ /substr/ ) { 
+					# first param - position of beginning. Example: black : substr 2,3 = ack 
+					# second param - if empty substr till the end. 
+					if ($this->{debug}) { 
+						$this->log("info","convert extension: substr '$param1':'$param2'");
+					}
+					
+					unless ( $param1 ) { 
+						$param1 = 0; 
+					} 
+					unless ( $param2 ) {
+						$this->{'exten'} = substr($this->{'exten'},$param1);
+					} else {
+						$this->{'exten'} = substr($this->{'exten'},$param1,$param2);
+					}
+				} 
+
+		}
+		$this->{extension} = $this->{'exten'}; 
+
+}
 sub process {
     my $this = shift;
 
@@ -646,11 +722,18 @@ sub process {
     # Init MixMonitor
     $this->_init_mixmonitor();
 
+	  # Init ULine 
+		$this->_init_uline( $callerid_num, $cdr_start );
+
     # Get permission
     $this->_get_permissions( $this->{peername}, $this->{extension} );
 
     # CallerID
     $this->_get_callerid( $this->{peername}, $this->{extension} );
+		$this->_set_callerid;
+
+		# Convert Extension 
+		$this->_convert_extension; 
 
     my $tgrp_first;
 
@@ -722,10 +805,6 @@ sub process {
                 "DIALSTATUS=" . $this->agi->get_variable("DIALSTATUS"), 3 );
         }
     }
-
-    # dial
-    # check for congestion
-    # epic fail
 
 }
 
