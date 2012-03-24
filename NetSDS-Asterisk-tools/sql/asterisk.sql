@@ -65,10 +65,10 @@ ALTER SCHEMA routing OWNER TO asterisk;
 -- Name: plpgsql; Type: PROCEDURAL LANGUAGE; Schema: -; Owner: postgres
 --
 
-CREATE OR REPLACE PROCEDURAL LANGUAGE plpgsql;
+CREATE LANGUAGE plpgsql;
 
 
-ALTER PROCEDURAL LANGUAGE plpgsql OWNER TO postgres;
+ALTER LANGUAGE plpgsql OWNER TO postgres;
 
 SET search_path = integration, pg_catalog;
 
@@ -829,7 +829,10 @@ CREATE TABLE recordings (
     concatenated boolean DEFAULT false,
     result_file character varying,
     previous_record bigint DEFAULT 0,
-    next_record bigint
+    next_record bigint,
+		cdr_start timestamp with time zone,
+		cdr_src character varying,
+		cdr_dst character varying
 );
 
 
@@ -1166,6 +1169,7 @@ CREATE TABLE queues (
     periodic_announce_frequency integer,
     ringinuse boolean DEFAULT false,
     setinterfacevar boolean DEFAULT true,
+		autofill boolean DEFAULT true,
     "monitor-type" character varying DEFAULT 'mixmonitor'::character varying NOT NULL
 );
 
@@ -2068,8 +2072,16 @@ REVOKE ALL ON SCHEMA public FROM postgres;
 GRANT ALL ON SCHEMA public TO postgres;
 GRANT ALL ON SCHEMA public TO PUBLIC;
 
+set search_path to public; 
 
---
--- PostgreSQL database dump complete
---
+create table primary_operators ( 
+	id bigserial not null primary key,
+	msisdn character varying (20),
+	operator character varying (20),
+	create_date timestamp without time zone default now(), 
+	comment character varying (40)
+);
+
+create INDEX primary_operators_msisdn on primary_operators (msisdn); 
+	
 
