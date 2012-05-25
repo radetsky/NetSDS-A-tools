@@ -203,7 +203,7 @@ sub _get_callerid {
         $this->log( "info",
 "$peername have to set CallerID to \'$callerid\' while calling to $exten"
         );
-        $this->agi->exec( "Set", "CALLERID(num)=$callerid" );
+        $this->agi->exec( "Set", "CALLERID(all)=$callerid" );
 				$this->{'calleridnum'} = $callerid;  
     }
     else {
