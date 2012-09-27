@@ -23,7 +23,7 @@ use strict;
 use warnings;
 
 for (my $id = 1; $id <= 200; $id++ ) { 
-	print "insert into integration.ULines (id) values ($id);\n";  
+	print "insert into integration.ulines (id) values ($id);\n";  
 } 
 
 1;
